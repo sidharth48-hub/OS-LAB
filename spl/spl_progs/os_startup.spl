@@ -1,0 +1,42 @@
+
+// Load the INIT program from the disk to the memory.
+// In Disk 65-66 , in memory 7 -8
+loadi(65,7);
+loadi(66,8);
+
+
+//Load the INT10 module from the disk to the memory.
+// 35 - 36	Interrupt 10 Routine: Exit	2 in Disk
+// 22 - 23	Interrupt 10 Routine: Exit	11264 - 12287	1024 in Memory
+
+loadi(22,35);
+loadi(23,36);
+
+// Load the exception handler routine from the disk to the memory.
+// 5 - 16	Exception Handler	2
+// 2 - 3	Exception Handler	1024 - 2047	1024 in Memory
+loadi(2, 15);
+loadi(3, 16);
+
+
+// You need two pages for storing the INIT program code (loaded from disk blocks 7 and 8) and one additional page for stack (why?). Hence, PTLR is set to value 3.
+PTBR = PAGE_TABLE_BASE; //29696
+PTLR = 3;
+
+// In the page table of INIT, set page numbers 65 and 66 for code and 76 for stack. (Pages 67 - 75 are reserved. See Memory Organisation .) Thus, the first word of each entry must be set to the corresponding physical page number (65 ,66 and 76). Set the second word ( Auxiliary information ) for pages 65 and 66 to "0100" and page 76 to "0110". This sets the code pages "read only" and stack "read/write"
+
+
+[PTBR+0] = 65; // code
+[PTBR+1] = "0100"; // read only
+[PTBR+2] = 66; // code
+[PTBR+3] = "0100"; // read only
+[PTBR+4] = 76; // stack 
+[PTBR+5] = "0110"; // read and write
+
+
+[76*512] = 0; // setting physical value of stack top to null
+SP = 2*512; //  accessing stack  from the page table using logical address
+
+ireturn; 
+
+
