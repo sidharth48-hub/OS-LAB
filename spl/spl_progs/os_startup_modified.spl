@@ -35,7 +35,7 @@ PTLR = 10;
 [PTBR+17] = "0110"; // read and write
 
 
-[76*512] = 8+4*512; // 8 is for the headers plus code starts at 4th page
+[76*512] = 4*512; // 8 is for the headers plus code starts at 4th page
 SP = 8*512; //  accessing stack  from the page table using logical address
 
 ireturn; 
