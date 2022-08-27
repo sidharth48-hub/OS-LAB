@@ -20,7 +20,7 @@ PUSH R6;
 PUSH R6;
 
 
-BRKP;
+
 
 INT 7;
 

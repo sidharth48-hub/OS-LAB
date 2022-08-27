@@ -1,4 +1,3 @@
-breakpoint;
 // Set the MODE FLAG field in the process table to the system call number which is 5 for write system call.
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 5;
 
@@ -16,7 +15,7 @@ userSP = SP;
 // SP = [user area page address ]
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
 
-PTBR = PAGE_TABLE_BASE;
+PTBR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
 
 alias physicalPageNum R1;
 alias offset R2;
@@ -30,7 +29,6 @@ fileDescPhysicalAddr = (physicalPageNum * 512) + offset;
 fileDescriptor=[fileDescPhysicalAddr];
 
 
-breakpoint;
 // If the file descriptor is not equal to -2, store -1 as a return value. According to system call convention, return value is stored at memory location userSP -1 in the user stack. Calculate physical address of the return value corresponding to userSP - 1 using address translation mechanism.
 
 if (fileDescriptor != -2)
