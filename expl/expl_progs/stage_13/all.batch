@@ -1,0 +1,3 @@
+
+load --int=timer ../spl/spl_programs/stage_13/timer.xsm
+load --int=idle ../spl/spl_programs/stage_13/idle.xsm

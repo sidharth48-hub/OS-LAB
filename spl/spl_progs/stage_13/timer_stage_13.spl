@@ -22,6 +22,7 @@ currentPID = [SYSTEM_STATUS_TABLE+1];
 
 // increasing tick of every program
 alias iter R1;
+iter=0;
 while(iter<16) do
     [PROCESS_TABLE + iter*16 + 0] = [PROCESS_TABLE + iter*16 + 0] + 1;
     iter = iter +1;
