@@ -7,9 +7,16 @@ loadi(69,11);
 loadi(70,12);
 
 breakpoint;
-PTLR = 10;
+
+// setting SP To kernel stack
+SP = [PROCESS_TABLE +  11]*512-1;
+
+// calling boot module
+call BOOT_MODULE;
+
 // IDLE
 PTBR = PAGE_TABLE_BASE; // 29696 //as PID of idle process is 0
+PTLR = 10;
 
 //Library FOR IDLE IS NOT USED
 [PTBR+0] = -1;
@@ -56,19 +63,15 @@ PTBR = PAGE_TABLE_BASE; // 29696 //as PID of idle process is 0
 [PROCESS_TABLE +  11] = 82;
 [PROCESS_TABLE + 12] = 0; // KPTR
 [PROCESS_TABLE + 13] = 8*512; // UPTR
-[PROCESS_TABLE + 14] = PTBR; // PTBR 
+[PROCESS_TABLE + 14] = PAGE_TABLE_BASE; // PTBR 
 [PROCESS_TABLE + 15] = 10; // PTLR
 
 
-// setting SP To kernel stack
-SP = [PROCESS_TABLE +  11]*512-1;
-
-// calling boot module
-call BOOT_MODULE;
 
 
-SP = 8*512; //  accessing stack  from the page table using logical address
+
 [81 * 512] = [69*512 + 1];
+SP = 8*512; //  accessing stack  from the page table using logical address
 
 ireturn; 
  
