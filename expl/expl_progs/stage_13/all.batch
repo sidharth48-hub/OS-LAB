@@ -1,3 +1,6 @@
-
-load --int=timer ../spl/spl_programs/stage_13/timer.xsm
-load --int=idle ../spl/spl_programs/stage_13/idle.xsm
+load --idle ../expl/expl_progs/stage_13/idle.xsm
+load --init ../expl/expl_progs/stage_13/odd_stage_13.xsm
+rm evens.xsm
+rm primes.xsm
+load --exec ../expl/expl_progs/stage_13/evens.xsm
+dump --inodeusertable

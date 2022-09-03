@@ -11,6 +11,6 @@ int main()
             temp = exposcall("Write",-2,i);
             i=i+2;
         endwhile;
-    return 0 ;
+    return 0;
     end
 }
