@@ -55,6 +55,6 @@ int main()
 
     temp = gcd(x,y);
     temp = exposcall("Write",-2,temp);
-    return 0;
+    return 0; 
     end
 }
