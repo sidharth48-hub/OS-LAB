@@ -135,10 +135,10 @@ count = 0;
 // DATA BLOCK 1 to 4 (4 words) - each DATA BLOCK column stores the block number of a data block of the file. If a file does not use a particular DATA BLOCK , it is set to -1.
 while(count < 4) do
     if([INODE_TABLE + (inodeIndex * 16) + 8 + count] != -1)then
-        multipush(R1,R2,R3,R4);
+        multipush(R1,R2,R3,R4,R5,R6);
         R1 = 1; // get free page function number
         call MOD_2; // Memory Manager Module
-        multipop(R1,R2,R3,R4);
+        multipop(R1,R2,R3,R4,R5,R6);
         [PTBR + 8 + count * 2] = R0;
         [PTBR + 9 + count * 2 ] = "0100";
         // Load the code blocks from the disk to the memory pages using loadi statement.(We will change this step in the next stage.)

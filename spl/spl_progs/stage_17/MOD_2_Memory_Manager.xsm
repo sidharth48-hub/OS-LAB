@@ -74,8 +74,6 @@ JMP _L10
 _L9:
 _L10:
 MOV R0, R4
-MOV R10, "Page"
-BRKP
 RET
 JMP _L2
 _L1:
@@ -136,8 +134,6 @@ ADD R16, 1
 MOV R4, R16
 JMP _L13
 _L14:
-MOV R10, "List"
-BRKP
 RET
 JMP _L12
 _L11:

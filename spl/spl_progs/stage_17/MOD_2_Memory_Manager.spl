@@ -36,8 +36,8 @@ if(functionNum == GET_FREE_PAGE) then
         freePage =-1;
     endif;
     R0=count;
-    R10 = "Page";
-    breakpoint;
+    // R10 = "Page";
+    // breakpoint;
     //Return to the caller.
     return;
 
@@ -65,8 +65,8 @@ if(functionNum ==  RELEASE_PAGE) then
         processId = processId + 1;
         count = count + 1;
     endwhile;
-    R10 = "List";
-    breakpoint;
+    // R10 = "List";
+    // breakpoint;
     // Return to the caller.
     return;
 endif;
