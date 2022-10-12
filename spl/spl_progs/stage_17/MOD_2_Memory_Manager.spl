@@ -45,11 +45,13 @@ endif;
 
 if(functionNum ==  RELEASE_PAGE) then
     alias pageNumber R2;
-    // The Page number to be released is present in R2. Decrement the corresponding entry in the memory free list.
-    [MEMORY_FREE_LIST+pageNumber] = 0;
-    // If that entry in the memory free list becomes zero, then the page is free. So increment the MEM_FREE_COUNT in the system status table.
-    [SYSTEM_STATUS_TABLE+2] = [SYSTEM_STATUS_TABLE+2] + 1;
     
+    if([MEMORY_FREE_LIST+pageNumber] == 1) then
+        // The Page number to be released is present in R2. Decrement the corresponding entry in the memory free list.
+        [MEMORY_FREE_LIST+pageNumber] = 0;
+        // If that entry in the memory free list becomes zero, then the page is free. So increment the MEM_FREE_COUNT in the system status table.
+        [SYSTEM_STATUS_TABLE+2] = [SYSTEM_STATUS_TABLE+2] + 1;
+    endif;
 
     // Update the STATUS to READY for all processes (with valid PID) which have STATUS as WAIT_MEM.
     alias processId R3;
