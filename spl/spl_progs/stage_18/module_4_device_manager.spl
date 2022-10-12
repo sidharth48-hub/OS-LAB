@@ -81,6 +81,7 @@ if (functionNum == DISK_LOAD) then
     R2 = currentPID;
     call RESOURCE_MANAGER;
     multipop(R1,R2,R3,R4);
+    // Ignore the value present in R0 as Acquire Terminal does not have any return value.
     // [DISK_STATUS_TABLE+0] = 1; //STATUS (1 word) - specifies whether the disk is free (indicated by 0) or busy (indicated by 1) handling a memory-disk transfer.
     [DISK_STATUS_TABLE+1] = 0; //LOAD/STORE BIT (1 word) - specifies whether the operation being done on the device is a load (indicated by 0) or store (indicated by 1).
     [DISK_STATUS_TABLE+2] = memPageNumber; //MEMORY PAGE NUMBER (1 word) - specifies the page number of the memory page that is being transferred to or from the disk.
