@@ -1,0 +1,6 @@
+Current User ID: 0
+Current PID: 1
+Memory Free Count: 29
+Wait Memory Count: 0
+Swapped Count: 0
+Paging Status: 0

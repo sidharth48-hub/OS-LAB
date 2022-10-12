@@ -1,0 +1,4 @@
+Memory Free Count: 31
+Wait Memory Count: 0
+Swapped Count: 0
+Paging Status: 0

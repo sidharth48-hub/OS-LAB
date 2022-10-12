@@ -12,9 +12,9 @@ alias reqPID R0;
 alias reqProcessTableEntry R1;
 reqPID = [TERMINAL_STATUS_TABLE+1];
 reqProcessTableEntry = PROCESS_TABLE + 16 * reqPID;
-breakpoint;
+// breakpoint;
 [reqProcessTableEntry+8] =  P0;
-breakpoint;
+// breakpoint;
 
 // next release the terminal 
 multipush(R0,R1);
