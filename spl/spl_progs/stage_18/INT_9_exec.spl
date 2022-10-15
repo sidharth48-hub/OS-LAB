@@ -1,3 +1,12 @@
+// intialize Per Process Resouce table
+alias perProcessTableEntry R1;
+alias count R2 = 0;
+while(count<16) do 
+    perProcessTableEntry = 	(([PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 11] + 1) * 512 ) - 16 + count;
+    [perProcessTableEntry] = -1;
+    count = count + 1;
+endwhile;
+
 // Save user stack value for later use, set up the kernel stack
 // Store the value of register SP in the UPTR field of the process table entry of the current process.
 [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
@@ -13,6 +22,8 @@ PTBR = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 14];
 
 // Initialize SP (kernel stack pointer) to (user area page number)*512 -1.
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512  - 1 ;
+
+
 
 // Get the argument (name of the file) from user stack.
 alias physicalPageNum R5;

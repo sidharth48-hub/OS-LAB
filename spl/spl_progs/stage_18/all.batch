@@ -12,3 +12,4 @@ load --int=6 ../spl/spl_progs/stage_16/int6_read.xsm
 load --int=9 ../spl/spl_progs/stage_18/INT_9_exec.xsm
 load --int=10 ../spl/spl_progs/stage_16/int_10_handler_stage_13.xsm
 load --int=console ../spl/spl_progs/stage_16/console_interupt_handler.xsm
+load --exhandler ../spl/spl_progs/stage_17/exception_handler.xsm

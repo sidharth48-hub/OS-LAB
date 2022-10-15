@@ -27,3 +27,5 @@ echo "Int 9 Compiled"
 echo "Module 1 Process Manager Compiled"
 ./spl ./spl_progs/stage_17/MOD_2_Memory_Manager.spl
 echo "Module 2 Memory Manager Compiled"
+./spl ./spl_progs/stage_17/exception_handler.spl
+echo "Exception Handler Compiled"

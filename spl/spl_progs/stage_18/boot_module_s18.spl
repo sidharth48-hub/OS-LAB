@@ -169,5 +169,13 @@ endwhile;
 [DISK_STATUS_TABLE] =0;
 
 // Initialize the per-process resource table of init process.
+alias perProcessTableEntry R1;
+alias count R2 = 0;
+while(count<16) do 
+    perProcessTableEntry = 	(([PROCESS_TABLE + (1*16) + 11] + 1) * 512 ) - 16 + count;
+    [perProcessTableEntry] = -1;
+    count = count + 1;
+endwhile;
+
 
 return;

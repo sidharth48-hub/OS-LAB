@@ -1,3 +1,5 @@
+breakpoint;
+R10 = "disk int";
 // Initialize SP (kernel stack pointer) to (user area page number)*512 -1.
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512  - 1 ;
@@ -7,12 +9,10 @@ SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512  - 1 ;
 
 backup;
 
-
 [DISK_STATUS_TABLE + 0] = 0; //Disk is no longer busy
 
-
 // Set the MODE FLAG in the process table to system call number of exec.
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 9] = 9;
+// [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 9] = 9;
 
 
 // Go through all the process table entries, and change the state of the process to READY, which is in WAIT_DISK state.
@@ -25,9 +25,10 @@ while(iter <  16) do
     iter=iter+1;
 endwhile;
 
-//Restore the register context and return to user mode using the ireturn statement.
+// Restore the register context and return to user mode using the ireturn statement.
 restore;
-
-// Change SP to UPTR field from the process table entry of the currently running process and return to the user mode. //Switch back to us er stack
+// Change SP to UPTR field from the process table entry of the currently running process and return to the user mode. 
+// Switch back to us er stack
 SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 13];
+breakpoint;
 ireturn;
