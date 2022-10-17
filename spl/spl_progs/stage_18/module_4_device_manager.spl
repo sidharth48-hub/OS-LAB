@@ -68,7 +68,7 @@ if (functionNum == TERMINAL_READ) then
     physicalAddress = physicalPageNum * 512 + offset;
 
     // Store the value present in input buffer field of process table to the obtained physical address of the word.
-    [physicalAddress] = [PROCESS_TABLE+ [TERMINAL_STATUS_TABLE+1]*16+8];
+    [physicalAddress] = [PROCESS_TABLE+ [SYSTEM_STATUS_TABLE+1]*16+8];
     return;
 
 endif;

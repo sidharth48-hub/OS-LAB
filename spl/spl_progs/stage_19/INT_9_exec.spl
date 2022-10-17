@@ -167,4 +167,6 @@ SP = 8*512;
 
 // Reset the MODE FLAG field in the process table to 0. Value 0 indicates that process is running in user mode.
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+breakpoint;
+R11=1;
 ireturn;

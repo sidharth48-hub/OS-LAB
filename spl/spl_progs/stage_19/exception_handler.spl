@@ -29,15 +29,17 @@ PTBR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+ 14];
 PTLR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+ 15];
 lastStackPageNum = PTLR*512-1;
 
-breakpoint;
 
 // If the cause of the exception is other than page fault (EC is not equal to 0) or if the user stack is full (when userSP is PTLR512-1, the return address can't be pushed onto the stack), then print a meaningful error message. Then invoke the Exit Process* function to halt the process and invoke the scheduler.
 
 if(EC!=0 || userSP==lastStackPageNum) then
+
     print "Stack Oveflow";
+    breakpoint;
+    R10 = "Stack Overflow";
     // Call Exit Process
     multipush(R0,R1,R2,R3,R4,R5);
-    R1 = 3; // exit function number
+    R1 = EXIT_PROCESS; // exit function number
     // process id
     R2 = [SYSTEM_STATUS_TABLE + 1]; 
     call MOD_1; // Process Manager Module
@@ -66,7 +68,9 @@ else
         call MOD_2;
         multipop(R1,R2,R3,R4,R5);
 
-        // Update the page table entry for this code page,set the page number to memory page obtained fromGet Code Pagefunction and auxiliary information to "1100".
+        // Update the page table entry for this code page,set the page number 
+        // to memory page obtained fromGet Code Pagefunction and 
+        // auxiliary information to "1100".
         [PTBR + EPN*2] = R0;
         [PTBR + EPN*2 + 1] = "1100";
 
