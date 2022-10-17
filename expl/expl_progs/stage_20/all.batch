@@ -1,5 +1,5 @@
-load --init ../expl/expl_progs/stage_20/assignment_2.xsm
 load --init ../expl/expl_progs/stage_20/openFileFork.xsm
+load --init ../expl/expl_progs/stage_20/assignment_2.xsm
 load --library ../expl/library.lib
 load --idle ../expl/expl_progs/stage_13/idle.xsm
 rm odds.xsm
