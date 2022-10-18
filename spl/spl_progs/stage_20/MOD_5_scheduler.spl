@@ -38,16 +38,17 @@ new_process_table = PROCESS_TABLE + newPID * 16;
 SP =  [new_process_table + 11] * 512 + [new_process_table + 12] ;
 PTBR = [new_process_table + 14];
 PTLR = [new_process_table + 15];
+
 // Set the PID field of the System Status Table as newPID.
 [SYSTEM_STATUS_TABLE + 1] = newPID;
+
 if([new_process_table + 4] == CREATED) then
     SP = [new_process_table +13];
 
     // Store the value in the first word of the kernel stack to the BP register.
-    BP = [[new_process_table + 11] * 512];
     [new_process_table + 4] = RUNNING;
     [new_process_table + 9] = 0; // MODE FLAG
-    breakpoint;
+    BP = [[new_process_table + 11] * 512];
     ireturn;
 endif;
 [new_process_table + 4] = RUNNING;

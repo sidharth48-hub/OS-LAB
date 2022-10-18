@@ -55,7 +55,7 @@ heapPageIter = 0;
 while(heapPageIter < 2) do
     if([PTBR+4+2*heapPageIter] ==-1) then
         multipush(R1,R2,R3,R4);
-        R1 = 1; // get free page function number
+        R1 = GET_FREE_PAGE; // get free page function number
         call MOD_2; // Memory Manager Module
         multipop(R1,R2,R3,R4);
         [PTBR+4+2*heapPageIter] = R0;

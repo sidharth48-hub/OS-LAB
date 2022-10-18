@@ -12,7 +12,7 @@ SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512  - 1 ;
 
 // Call the Exit Process function in process manager module to exit the current process
 
-breakpoint;
+
 R0="Exiting";
 R1 = EXIT_PROCESS; // exit function number
 // process id

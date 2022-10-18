@@ -64,7 +64,7 @@ endif;
 // Call the Exit Process function in process manager module to deallocate the resources and pages of the current process.
 
 multipush(R0,R1,R2,R3,R4,R5);
-R1 = 3; // exit function number
+R1 = EXIT_PROCESS; // exit function number
 // process id
 R2 = [SYSTEM_STATUS_TABLE + 1]; 
 call MOD_1; // Process Manager Module
@@ -121,13 +121,13 @@ multipop(R0,R1,R2,R3,R4,R5,R6);
 
 // Invoke the Get Code Page function for the first code block and update the page table entry for this first code page.
 multipush(R0,R1,R2,R3,R4,R5,R6);
-breakpoint;
+
 // Call GET CODE PAGE
 R1 = GET_CODE_PAGE;
 R2 = [INODE_TABLE + (inodeIndex * 16) + 8];
 R3 = [SYSTEM_STATUS_TABLE+1];
 call MOD_2; // Memory Manager Module
-breakpoint;
+
 [PTBR + 8 + 0 * 2] = R0;
 [PTBR + 9 + 0 * 2 ] = "0110";
 multipop(R0,R1,R2,R3,R4,R5,R6);
@@ -167,6 +167,5 @@ SP = 8*512;
 
 // Reset the MODE FLAG field in the process table to 0. Value 0 indicates that process is running in user mode.
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
-breakpoint;
-R11=1;
+
 ireturn;

@@ -65,6 +65,7 @@ else
         codeBlockNumber = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE+1] *10+ 4+offset];
         R1 = GET_CODE_PAGE;
         R2 = codeBlockNumber;
+        R3 = [SYSTEM_STATUS_TABLE+1];
         call MOD_2;
         multipop(R1,R2,R3,R4,R5);
 
