@@ -67,8 +67,6 @@ JZ R16, _L1
 MOV R16, "Stack Oveflow"
 PORT P1, R16
 OUT
-BRKP
-MOV R10, "Stack Overflow"
 PUSH R0
 PUSH R1
 PUSH R2
@@ -102,7 +100,6 @@ POP R1
 POP R0
 JMP _L2
 _L1:
-BRKP
 MOV R16, 4
 EQ R16, EPN
 MOV R17, 5

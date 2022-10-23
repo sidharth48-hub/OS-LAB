@@ -35,8 +35,7 @@ lastStackPageNum = PTLR*512-1;
 if(EC!=0 || userSP==lastStackPageNum) then
 
     print "Stack Oveflow";
-    breakpoint;
-    R10 = "Stack Overflow";
+
     // Call Exit Process
     multipush(R0,R1,R2,R3,R4,R5);
     R1 = EXIT_PROCESS; // exit function number
@@ -53,7 +52,7 @@ if(EC!=0 || userSP==lastStackPageNum) then
 else
 
     // print "Page Fault";
-    breakpoint;
+  
     // if the page that caused the exception is a code page
     // code pages are 4,5,6,7
     if(EPN == 4 || EPN == 5 || EPN == 6 || EPN == 7) then

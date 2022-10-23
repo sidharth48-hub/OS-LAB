@@ -1,0 +1,123 @@
+
+// At the beginning of interrupt routine 13, extract the system call number from the user stack and switch to the kernel stack.
+alias userSP R1;
+alias systemCallNum R2;
+alias processTableEntryAddress R3;
+processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+// Save the user stack pointer in the process table
+[processTableEntryAddress + 13]= SP;
+
+// switch to the kernel stack
+SP = [processTableEntryAddress + 11] * 512  - 1 ;
+PTBR = [processTableEntryAddress + 14] ;
+
+userSP = [processTableEntryAddress + 13];
+systemCallNum = [[PTBR + 2*((userSP-5)/512)] * 512 + ((userSP-5)%512)] ;
+
+// Change the MODE FLAG in the process tableto the system call number.
+[processTableEntryAddress + 9] = systemCallNum;
+
+
+
+if(systemCallNum == 17) then //  SEMGET
+
+    alias perProcessTableEntry R4;
+    alias count R5;
+    alias semId R6;
+    count  = 0;
+    semId = -1;
+    // Find a free entry in the per process resource table of the current process.
+    while(count<8) do 
+        perProcessTableEntry = (([processTableEntryAddress + 11] + 1) * 512 ) + -16+2*count;  
+        if([perProcessTableEntry] == -1) then
+            semId = count;
+            break;
+        endif;
+        count = count + 1;
+    endwhile;
+
+    // If there is not free process then return to user mode with -1 as return value
+    if (semId == -1 ) then
+
+        //  return to the user mode with -1 stored as return value indicating failure.
+        [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -1;
+
+        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
+        [processTableEntryAddress + 9] = 0;
+        SP = [processTableEntryAddress + 13];
+        ireturn;
+    endif;
+
+    alias semEntry R4;
+    semEntry = (([processTableEntryAddress + 11] + 1) * 512 ) + -16+2*semId;  
+
+    // Resource Identifier field of the per-process resource table entry is set to 1 to indicate that the resource is a semaphore.
+    [semEntry] = 1;
+
+    // Acquire a semaphore by calling the acquire_semaphore() function in the Resource Manager Module.
+    multipush(R1,R2,R3,R4,R5,R6);
+    R1 = ACQUIRE_SEMAPHORE;
+    R2 = [SYSTEM_STATUS_TABLE+1];
+    call RESOURCE_MANAGER;
+    multipop(R1,R2,R3,R4,R5,R6);
+
+    // If there are no free semaphores, return -2.
+    if (R0 == -1 ) then
+
+        // return to the user mode with -2 stored as return value indicating failure.
+        [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -2;
+
+        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
+        [processTableEntryAddress + 9] = 0;
+        SP = [processTableEntryAddress + 13];
+        ireturn;
+    endif;
+    alias semIndex R0;
+    // Store the index of the Semaphore table entry in the Per Process Resource Table entry.   (Attach the semaphore to the process.)
+    [semEntry+1] = R0;
+
+
+endif;
+
+if(systemCallNum == 18) then // SEMRELEASE
+    // Extract Sem ID from the user stack
+    alias semId R4;
+    semId = [[PTBR + 2*((userSP-4)/512)] * 512 + ((userSP-4)%512)] ;
+
+    alias semEntry R5;
+    semEntry = (([processTableEntryAddress + 11] + 1) * 512 ) + -16+2*semId;  
+
+    // Check validity of sem ID
+    // If Semaphore descriptor is not valid or the entry in the Per Process Resource Table is not valid, return -1. 
+    // The descriptor is invalid if not in the range 0 - 7, or if the resource identifier field of the table entry is not 1 
+    if(semId>7 || semId < 0 || [semEntry] != 1 ) then
+        
+        //  return to the user mode with -1 stored as return value indicating failure.
+        [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -1;
+
+        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
+        [processTableEntryAddress + 9] = 0;
+        SP = [processTableEntryAddress + 13];
+        ireturn;
+    endif;
+
+    // Invoke the release_semaphore() function in the Resource Manager Module.
+    multipush(R1,R2,R3,R4,R5);
+    R1 = RELEASE_SEMAPHORE;
+    R2 = semId; // Semaphore Table Index
+    R3  = [SYSTEM_STATUS_TABLE+1]; // PID
+    multipop(R1,R2,R3,R4,R5);
+    
+    // Invalidate the Per-Process resource table entry.   ( Set to -1 )
+    [semEntry] = -1;
+
+endif;
+
+// return to the user mode with 0 stored as return value indicating success.
+[[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = 0;
+// At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
+[processTableEntryAddress + 9] = 0;
+SP = [processTableEntryAddress + 13];
+ireturn;
+
+
