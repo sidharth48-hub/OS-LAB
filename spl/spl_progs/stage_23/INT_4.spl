@@ -109,7 +109,7 @@ if(systemCallNum == 1) then //  Create
     [rootFileEntryAddress] = fileName; // File Name 
     [rootFileEntryAddress+1] = 0; // File Size
     [rootFileEntryAddress+2] = DATA; // File Type  
-    [rootFileEntryAddress+3] = [processTableEntryAddress+3]; // User ID
+    [rootFileEntryAddress+3] = [USER_TABLE + [processTableEntryAddress+3]*2]; // User Name
 
 endif;
 
