@@ -1,0 +1,212 @@
+alias userSP R1;
+userSP = SP;
+
+alias process_table R2;
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+PTBR = [process_table + 14];
+
+alias system_call_num R3;
+system_call_num = [([PTBR + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+
+alias retvalue R4;
+retvalue = ([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512;
+
+alias fileName R5;
+fileName = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
+
+//////////CREATE SYSTEM CALL///////////
+if(system_call_num == 1) then
+
+    [process_table + 9] = 1;
+    
+
+    alias permission R6;
+    permission = [([PTBR + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+
+    alias iter R7;
+    iter = 0;
+
+    while(iter < MAX_FILE_NUM) do
+        if([INODE_TABLE + iter*16 + 1] == fileName) then
+            [retvalue] = 0;
+            [process_table + 9] = 0;
+            SP = [process_table + 13];
+            ireturn;
+        endif;    
+
+        iter = iter + 1;
+    endwhile;
+
+    iter = 0;
+
+    alias inode_table_entry R8;
+
+    while(iter < MAX_FILE_NUM) do
+        
+        inode_table_entry = INODE_TABLE + iter*16;
+        if([inode_table_entry + 1] == -1) then
+           
+           [inode_table_entry + 0] = DATA;//FILE TYPE
+           [inode_table_entry + 1] = fileName;//FILENAME
+           [inode_table_entry + 2] = 0;//FILE SIZE
+           [inode_table_entry + 3] = [process_table + 3];//USER ID
+           [inode_table_entry + 4] = permission;
+           
+           [inode_table_entry + 8] = -1;
+           [inode_table_entry + 9] = -1;
+           [inode_table_entry + 10] = -1;
+           [inode_table_entry + 11] = -1;
+           
+
+
+
+           ////////ROOT FILE ENTRY///////
+
+           alias root_file_entry R9;
+           root_file_entry = ROOT_FILE + iter*8;
+           [root_file_entry + 0] = fileName;
+           [root_file_entry + 1] = 0;//FILE SIZE
+           [root_file_entry + 2] = DATA;
+           [root_file_entry + 3] = [USER_TABLE + [process_table + 3]*2];//USERNAME
+           [root_file_entry + 4] = permission;
+
+           [retvalue] = 0;
+           [process_table + 9] = 0;
+           SP = [process_table + 13];
+           ireturn;
+
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+
+    [retvalue] = -1;
+    [process_table + 9] = 0;
+    SP = [process_table + 13];
+    ireturn;    
+
+endif;
+
+
+////////////DELETE SYSTEM CALL/////////
+if(system_call_num == 4) then
+    
+    [process_table + 9] = 4;
+
+    alias iter R6;
+    iter = 0;
+
+    alias inode_table_entry R7;
+
+    while(iter < MAX_FILE_NUM) do
+        
+        inode_table_entry = INODE_TABLE + iter*16;
+        if([inode_table_entry + 1] == fileName) then
+           
+            if([inode_table_entry] != DATA) then
+               [retvalue] = -1;//file is not DATA
+               [process_table + 9] = 0;
+               SP = [process_table + 13];
+               ireturn;
+            endif;   
+            
+            //checking for exclusive permission
+            if([inode_table_entry + 4] == 0) then
+                if([inode_table_entry + 3] !=1 && [inode_table_entry + 3] != [process_table + 3]) then
+                   [retvalue] = -1;
+                   [process_table + 9] = 0;
+                   SP = [process_table + 13];
+                   ireturn;
+                endif;
+            endif;
+            
+            //calling Acquire inode//////
+            multipush(R1,R2,R3,R4,R5,R6,R7);
+            R1 = 4;
+            R2 = iter;
+            R3 = [SYSTEM_STATUS_TABLE + 1];
+            call MOD_0;
+            multipop(R1,R2,R3,R4,R5,R6,R7);
+            
+            if([FILE_STATUS_TABLE + iter*4 + 1] != -1) then
+                [retvalue] = -2;
+                [process_table + 9] = 0;
+                SP = [process_table + 13];
+                ireturn;
+            endif;
+
+            alias iter2 R8;
+            iter2 = 0;
+            
+            ////relasing block from buffer table and reseting dirty bit of that block////
+            while(iter2 < 4) do
+                
+                if([inode_table_entry + 8 + iter2] != -1) then
+                    alias buffer_num R9;
+                    buffer_num = 0;
+    
+                    while(buffer_num < MAX_BUFFER) do
+    
+                        if([BUFFER_TABLE + buffer_num*4] == [inode_table_entry + 8 + iter2] && [BUFFER_TABLE + buffer_num*4 + 1] == 1) then
+                            [BUFFER_TABLE + buffer_num*4 + 1] = 0;
+                        endif;
+                    
+                        buffer_num = buffer_num + 1;
+                    endwhile;
+    
+                    multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9);
+                    R1 = 4;
+                    R2 = [INODE_TABLE + iter*16 + 8 + iter2];
+                    R3 = [SYSTEM_STATUS_TABLE + 1];
+                    call MOD_2;
+                    multipop(R1,R2,R3,R4,R5,R6,R7,R8,R9);
+
+                endif;
+
+                iter2 = iter2 + 1;
+            endwhile;
+
+
+            ////Invalidating inode table///// 
+            iter2 = 0;
+
+            while(iter2 < 16) do
+               [inode_table_entry + iter2] = -1;
+               iter2 = iter2 + 1;
+            endwhile;
+            
+
+            ///Invalidating the root file//
+
+            [ROOT_FILE + iter*8] = -1;
+
+            
+            ///calling release inode///
+            multipush(R1,R2,R3,R4,R5,R6,R7,R8);
+            R1 = 5;
+            R2 = iter;
+            R3 = [SYSTEM_STATUS_TABLE + 1];
+            call MOD_0;
+            multipop(R1,R2,R3,R4,R5,R6,R7,R8);
+            
+            [retvalue] = 0;
+            [process_table + 9] = 0;
+            SP = [process_table + 13];
+            ireturn;
+
+        endif;
+
+        iter = iter + 1; 
+    endwhile;
+
+    [retvalue] = 0;//file is not present
+    [process_table + 9] = 0;
+    SP = [process_table + 13];
+    ireturn;     
+
+endif;

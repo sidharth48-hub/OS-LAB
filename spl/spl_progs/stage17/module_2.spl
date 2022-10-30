@@ -1,0 +1,54 @@
+alias func_number R1;
+
+
+/////////Get_Free_page Function////////
+if(func_number==1) then
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]+1; //Incrementing the wait_mem_count
+
+
+    while([SYSTEM_STATUS_TABLE+2]==0) do
+       [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_MEM;
+       call MOD_5;
+    endwhile;
+
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]-1;
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1;
+
+    alias count R5;
+    count=0;
+
+    while(count<128) do
+       if([MEMORY_FREE_LIST+count]==0) then
+           breakpoint;
+           [MEMORY_FREE_LIST+count]=1;
+           R0=count;
+           break;
+       endif;
+       count=count+1;
+    endwhile;
+    breakpoint; 
+    return;         
+endif;
+
+
+
+//////////Release_page Function///////////
+if(func_number==2) then
+   alias page_number R2;
+   [MEMORY_FREE_LIST+page_number]=[MEMORY_FREE_LIST+page_number]-1;
+   
+   if([MEMORY_FREE_LIST+page_number]==0) then
+      [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]+1; //Incrementing the mem_free_count
+   endif;
+   alias count R5;
+   count=0;
+   while(count<16) do
+      if([PROCESS_TABLE+count*16+4]==WAIT_MEM) then
+          [PROCESS_TABLE+count*16+4]=READY;
+      endif;
+      count=count+1;
+   endwhile;
+   breakpoint;   
+   return;       
+endif;
+

@@ -1,0 +1,112 @@
+alias func_number R1;
+
+
+/////////Get_Free_page Function////////
+if(func_number==1) then
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]+1; //Incrementing the wait_mem_count
+
+
+    while([SYSTEM_STATUS_TABLE+2]==0) do
+       [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_MEM;
+       call MOD_5;
+    endwhile;
+
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]-1;
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1;
+
+    alias iter R3;
+    iter=0;
+
+    while(iter<128) do
+       if([MEMORY_FREE_LIST + iter] == 0) then
+           [MEMORY_FREE_LIST + iter] = 1;
+           R0=iter;
+           break;
+       endif;
+       iter=iter+1;
+    endwhile;
+    breakpoint;
+    return;         
+endif;
+
+
+
+//////////Release_page Function///////////
+if(func_number==2) then
+   alias page_number R2;
+   [MEMORY_FREE_LIST+page_number]=[MEMORY_FREE_LIST+page_number]-1;
+   
+   if([MEMORY_FREE_LIST+page_number]==0) then
+      [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]+1; //Incrementing the mem_free_count
+   endif;
+   alias count R5;
+   count=0;
+   while(count<16) do
+      if([PROCESS_TABLE+count*16+4]==WAIT_MEM) then
+          [PROCESS_TABLE+count*16+4]=READY;
+      endif;
+      count=count+1;
+   endwhile;
+   return;       
+endif;
+
+
+////////////RELEASE BLOCK////////////
+if(func_number==4) then
+    alias block_number R2;
+    alias PID R3;
+
+    [DISK_FREE_LIST + block_number] = [DISK_FREE_LIST+ block_number] - 1;
+    return;
+endif;
+
+
+
+
+
+/////////////////GET CODE PAGE/////////////
+if(func_number==5) then
+   alias block_number R2;
+   alias page_table_entry R5;
+   alias disk_map_table R6;
+   alias iter R7;
+
+   iter=0;
+
+    while(iter<MAX_PROC_NUM) do
+      disk_map_table = DISK_MAP_TABLE + iter*10;
+      page_table_entry = [PROCESS_TABLE+iter*16+14];
+
+      alias count R8;
+      count=4;
+
+      while(count<8) do
+        if([disk_map_table+count]==block_number && [page_table_entry+count*2]!=-1) then
+              R0=[page_table_entry+count*2];
+              [MEMORY_FREE_LIST+R0]=[MEMORY_FREE_LIST+R0]+1;
+              return;
+        endif;
+        count=count+1;
+      endwhile;
+      iter=iter+1;
+    endwhile;    
+    
+    alias page_number R9;
+    multipush(R1,R2,R5,R6,R7);
+    R1=1;
+    call MOD_2;
+    page_number=R0;
+    multipop(R1,R2,R5,R6,R7);
+
+    multipush(R1,R2,R5,R6,R7,R9);
+    R3=page_number;
+    R4=block_number;
+    R1=2;
+    R2=[SYSTEM_STATUS_TABLE+1];
+    call MOD_4;
+    multipop(R1,R2,R5,R6,R7,R9);
+    
+    R0=page_number;
+    return;
+endif;
+

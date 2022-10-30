@@ -1,0 +1,98 @@
+alias userSP R0;
+userSP = SP;
+
+PTBR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
+
+alias system_call_num R1;
+system_call_num = [([PTBR + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+
+alias process_table R2;
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+alias currentPID R3;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
+
+
+/////////GETPID SYSTEM CALL//////////
+if(system_call_num == 11) then
+    [process_table + 9] = 11;
+    
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = currentPID;//RETURN VALUE
+
+    [process_table + 9] = 0;
+endif;
+
+
+
+
+///////////GETPPID SYSTEM CALL/////////
+if(system_call_num == 12) then
+    [process_table + 9] = 11;
+
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = [process_table + 2];//RETURN VALUE
+
+    [process_table + 9] = 0;
+endif;
+
+
+
+
+
+///////WAIT SYSTEM CALL//////////////
+if(system_call_num == 13) then
+    [process_table + 9] = 13;
+
+    alias pid R4;
+    pid = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+    
+    if(pid == currentPID || ([PROCESS_TABLE + pid*16 + 4] == TERMINATED)) then
+        [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = -1;//RETURN VALUE
+
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    [process_table + 4] = WAIT_PROCESS;
+    [process_table + 5] = pid;
+
+    multipush(R0,R1,R2,R3,R4);
+    call MOD_5;
+    multipop(R0,R1,R2,R3,R4);
+
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = 0;//RETURN VALUE
+
+    [process_table + 9] = 0;
+endif;
+
+
+/////////SIGNAL SYSTEM CALL///////////
+if(system_call_num == 14) then
+    [process_table + 9] = 14;
+
+    alias iter R5;
+    iter=0;
+
+    while(iter<16) do
+       if([PROCESS_TABLE + iter*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + iter*16 + 5] == currentPID) then
+           [PROCESS_TABLE + iter*16 + 4] = READY;
+       endif;
+       iter = iter + 1;
+    endwhile;
+
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = 0;//RETURN VALUE
+
+    [process_table + 9] = 0;
+    
+    [process_table + 9] = 0;
+endif;
+
+SP = [process_table + 13];
+ireturn;
+
+
+
+

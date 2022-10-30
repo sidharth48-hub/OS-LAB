@@ -1,0 +1,37 @@
+alias functionNum R1;
+alias currentPID R2;
+alias word R3;
+
+if(functionNum!=3) then
+    return;
+endif;
+
+////////ACQUIRE TERMINAL///////////
+multipush(R1,R2,R3);
+
+alias function_number R1;
+function_number = 8;
+
+alias PID R2;
+PID = [SYSTEM_STATUS_TABLE + 1];
+
+call MOD_0;
+
+multipop(R1,R2,R3);
+print word;
+
+
+////////////RELEASE TERMINAL////////
+multipush(R1,R2,R3);
+
+function_number = 9;
+PID = [SYSTEM_STATUS_TABLE + 1];
+
+call MOD_0;
+
+alias return_value R4;
+return_value = R0;
+
+multipop(R1,R2,R3);
+
+return;

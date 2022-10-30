@@ -1,0 +1,17 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE +1]*16 + 4] = TERMINATED;
+
+alias num R0;
+num=15;
+alias count R1;
+count=1;
+
+while(num) do
+   if([PROCESS_TABLE + count*16 + 4] != TERMINATED) then
+       call MOD_5;
+       ireturn;
+   endif;     
+   count=count+1;
+   num=num-1;
+endwhile;
+
+halt;

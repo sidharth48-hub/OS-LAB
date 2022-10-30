@@ -1,0 +1,51 @@
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+multipush(BP);
+
+alias process_table_entry R1;
+process_table_entry = PROCESS_TABLE + currentPID*16;
+
+[process_table_entry + 12] = SP%512;
+//[process_table_entry + 14] = PTBR;
+//[process_table_entry + 15] = PTLR;
+
+
+
+alias num R2;
+num=16 - (currentPID + 1);
+
+alias PID R3;
+PID = currentPID + 1; //succeeding entry of the current process
+
+alias newPID R4;
+newPID = 0; // initially taking newPID to idle process if there is no program in created or ready state
+
+while(num) do
+    if(([PROCESS_TABLE + PID*16 + 4]==READY) || ([PROCESS_TABLE + PID*16 +4]==CREATED)) then
+        newPID = PID;
+        break;
+    endif;    
+    PID = PID + 1;
+    num=num-1;
+endwhile;
+
+alias new_process_table R5;
+new_process_table = PROCESS_TABLE + newPID*16;
+
+SP = [new_process_table + 11]*512 + [new_process_table + 12];
+PTBR = [new_process_table + 14];
+PTLR = [new_process_table + 15];
+
+[SYSTEM_STATUS_TABLE + 1] = newPID;
+
+if([new_process_table + 4]==CREATED) then
+   SP = [new_process_table + 13];
+   BP = [[new_process_table + 11] * 512];
+   [new_process_table + 4] = RUNNING;
+   [new_process_table + 9] = 0;
+   ireturn;
+endif;
+
+[new_process_table + 4] = RUNNING;
+multipop(BP);
+return;

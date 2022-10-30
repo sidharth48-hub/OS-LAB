@@ -1,0 +1,250 @@
+alias func_number R1;
+alias PID R2;
+
+//////////////GET_PCB_ETRY//////////////////
+
+if(func_number==1) then
+    alias iter R3;
+    iter=0;
+
+    while(iter<16) do
+      if([PROCESS_TABLE + iter*16 + 4] == TERMINATED) then
+          [PROCESS_TABLE + iter*16 + 1]=iter;
+          [PROCESS_TABLE + iter*16 + 4]=ALLOCATED;
+          [PROCESS_TABLE + iter*16 + 14]=PAGE_TABLE_BASE + (iter*20);
+          [PROCESS_TABLE + iter*16 + 15]=10;
+          R0=iter;
+          return;
+       endif;
+       iter = iter + 1;
+    endwhile;      
+    
+    R0 = -1; //If no process_table_entry is free///
+    return;
+
+endif;
+
+
+
+/////FREE_USER_AREA_PAGE///////////
+if( func_number==2 ) then
+    alias user_area_page_number R3;
+    user_area_page_number=[PROCESS_TABLE+PID*16+11];
+
+    alias iter R4;
+    iter = 0;
+
+
+    while(iter < 8) do
+
+        //////Releasing semaphore///////////
+       if([(user_area_page_number)*512 + 496 + 2*iter] == SEMAPHORE) then
+           multipush(R1,R2,R3,R4);
+           R1 = 7;
+           R2 = [(user_area_page_number)*512 + 496 + 2*iter + 1];
+           R3 = [SYSTEM_STATUS_TABLE + 1];
+           call MOD_0;
+           multipop(R1,R2,R3,R4);
+       endif;
+       
+        //////Releasing file///////////
+       if([(user_area_page_number)*512 + 496 + 2*iter] == FILE) then
+           multipush(R1,R2,R3,R4);
+           R1 = 4;
+           R2 = [(user_area_page_number)*512 + 496 + 2*iter + 1];
+           call MOD_3;
+           multipop(R1,R2,R3,R4);
+       endif;
+
+       [(user_area_page_number)*512 + 496 + 2*iter] = -1;
+
+       iter = iter + 1;
+    endwhile;
+
+
+    
+
+
+
+    ///Calling Release_page function from memory_manager_module///
+    multipush(R1,R2,R3);
+    R1=2;
+    R2=user_area_page_number;
+    call MOD_2;
+    multipop(R1,R2,R3);
+    
+    
+    return;
+
+endif;
+
+
+//////////EXIT PROCESS//////////
+if(func_number==3) then
+   
+   ////Invoking the free_page_table from process_manager_module///
+   multipush(R1,R2);
+   R1=4;
+   call MOD_1;
+   multipop(R1,R2);
+
+   ////Invoking the free_user_area_page from process_manager_module///
+   multipush(R1,R2);
+   R1=2;
+   call MOD_1;
+   multipop(R1,R2);
+
+   alias iter R3;
+   iter = 0;
+
+   if([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] != 9) then
+
+       while(iter<16) do
+           if([PROCESS_TABLE + iter*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + iter*16 + 5] == PID) then
+               [PROCESS_TABLE + iter*16 + 4] = READY;
+
+                if([PROCESS_TABLE + iter*16 + 2] == [PROCESS_TABLE + PID*16 + 1]) then
+                    [PROCESS_TABLE + iter*16 + 2] = -1;
+                endif;
+           endif;
+           iter = iter + 1;
+   endwhile;            
+   endif;    
+   
+   [PROCESS_TABLE+PID*16+4]=TERMINATED;
+   return;
+endif;
+
+
+//////FREEE_PAGE_TABLE/////////
+
+if(func_number==4) then
+
+   PTBR = [PROCESS_TABLE+PID*16+14];
+   [PTBR+0]=-1;
+   [PTBR+1]="0000";
+   [PTBR+2]=-1;
+   [PTBR+3]="0000";
+
+   alias iter R3;
+   iter = 4;
+
+    while(iter<20) do
+      if([PTBR+iter]!=-1) then
+        ///Calling Release_page function from memory_manager_module///
+        multipush(R1,R2,R3);
+        R1=2;
+        R2=[PTBR+iter];
+        call MOD_2;
+        multipop(R1,R2,R3);
+        [PTBR+iter]=-1;
+        [PTBR+iter+1]="0000";
+      endif;
+      iter=iter+2;
+    endwhile; 
+
+    alias disk_map_table R4;
+    disk_map_table = DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10;
+
+    iter = 2;
+
+    while(iter<4) do
+        if([disk_map_table + iter]!=-1) then
+            multipush(R1,R2,R3,R4);
+            R1=4;
+            R2=[disk_map_table+iter];
+            R3=PID;
+            call MOD_2;
+            multipop(R1,R2,R3,R4);
+        endif;
+        iter=iter+1;
+    endwhile;
+
+    iter=8;
+    while(iter<10) do
+        if([disk_map_table+iter]!=-1) then
+            multipush(R1,R2,R3,R4);
+            R1=4;
+            R2=[disk_map_table+iter];
+            R3=PID;
+            call MOD_2;
+            multipop(R1,R2,R3,R4);
+        endif;
+        iter=iter+1;
+    endwhile;
+
+    iter=0;
+    while(iter<10) do
+       [disk_map_table+iter]=-1;
+       iter=iter+1;
+    endwhile;
+
+   return;
+endif;   
+
+
+//////KILL_ALL///////
+if(func_number == 5) then
+
+    alias iter R3;
+    iter = 0;
+   
+    alias inode_entry R4;
+
+    while(iter < 0) do
+        inode_entry = INODE_TABLE + iter*16;
+
+        if([inode_entry + 1]!=-1) then
+
+           ///Acquire inode///
+           multipush(R1,R2,R3,R4);
+           R1 = 4;
+           R2 = iter;
+           R3 = [SYSTEM_STATUS_TABLE + 1];
+           call MOD_0;
+           multipop(R1,R2,R3,R4);
+
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    iter = 2;
+    while(iter < 16) do
+        if(iter != 15) then
+            if(iter != PID && [PROCESS_TABLE + iter*16 + 4] != TERMINATED) then
+
+                //call exit process 
+                multipush(R1,R2,R3,R4);
+                R1 = 3;
+                R2 = iter;
+                call MOD_1;
+                multipop(R1,R2,R3,R4);
+            endif;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    iter = 0;
+
+    while(iter < 0) do
+        inode_entry = INODE_TABLE + iter*16;
+
+        if([inode_entry + 1]!=-1) then
+
+           ///Release inode///
+           multipush(R1,R2,R3,R4);
+           R1 = 5;
+           R2 = iter;
+           R3 = [SYSTEM_STATUS_TABLE + 1];
+           call MOD_0;
+           multipop(R1,R2,R3,R4);
+
+        endif;
+
+        iter = iter + 1;
+    endwhile;            
+    
+    return;
+endif;    

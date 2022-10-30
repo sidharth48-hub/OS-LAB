@@ -1,0 +1,107 @@
+alias userSP R1;
+userSP = SP;
+
+PTBR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
+
+alias system_call_num R2;
+system_call_num = [([PTBR + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+
+alias process_table R3;
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+alias currentPID R4;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
+
+
+///////SEM LOCK SYSTEM CALL/////////
+if(system_call_num == 19) then
+    [process_table + 9] = 19;
+   
+    alias userAreapage R5;
+    userAreapage = [process_table + 11];
+   
+    alias semID R6;
+    semID = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+
+    alias sem_index R7;
+    sem_index = [(userAreapage)*512 + 496 + 2*semID + 1];
+
+    if(semID > 7 || semID < 0 || [(userAreapage)*512 + 496 + 2*semID] == -1) then
+        [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    while([SEMAPHORE_TABLE + sem_index*4] != -1 && [SEMAPHORE_TABLE + sem_index*4] != currentPID) do
+        [process_table + 4] = WAIT_SEMAPHORE;
+        [process_table + 5] = sem_index;
+        
+        multipush(R1,R2,R3,R4,R5,R6,R7);
+        call MOD_5;
+        multipop(R1,R2,R3,R4,R5,R6,R7);
+    endwhile;        
+
+    [SEMAPHORE_TABLE + sem_index*4] = [SYSTEM_STATUS_TABLE + 1];
+
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = 0;
+
+    [process_table + 9] = 0;
+    SP = [process_table + 13];
+    ireturn;
+
+endif;
+
+
+
+/////////SEM UNLOCK SYSTEM CALL/////////
+if(system_call_num == 20) then
+   
+    [process_table + 9] = 20;
+
+    alias userAreapage R5;
+    userAreapage = [process_table + 11];
+   
+    alias semID R6;
+    semID = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+
+    alias sem_index R7;
+    sem_index = [(userAreapage)*512 + 496 + 2*semID + 1];
+
+    if(semID > 7 || semID < 0 || [(userAreapage)*512 + 496 + 2*semID] == -1) then
+        [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    if([SEMAPHORE_TABLE + sem_index*4]!=-1) then
+        if([SEMAPHORE_TABLE + sem_index*4]!=currentPID) then
+            [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = -2;
+            [process_table + 9] = 0;
+            SP = [process_table + 13];
+            ireturn;
+        endif;    
+
+        [SEMAPHORE_TABLE + sem_index*4] = -1;
+
+        alias iter R8;
+        iter = 0;
+    
+        while(iter < 16) do
+           if([PROCESS_TABLE + iter*16 + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + iter*16 + 5] == sem_index) then
+                [PROCESS_TABLE + iter*16 + 4] = READY;
+           endif;
+    
+           iter = iter + 1;
+        endwhile;   
+    endif;         
+    
+    [([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512] = 0;
+    [process_table + 9] = 0;
+    SP = [process_table + 13];
+    ireturn;
+endif;

@@ -1,0 +1,20 @@
+load --module 0 ../spl/spl_progs/joel/module_0.xsm
+load --module 1 ../spl/spl_progs/joel/module_1.xsm
+load --module 2 ../spl/spl_progs/joel/module_2.xsm
+load --module 3 ../spl/spl_progs/joel/module_3.xsm
+load --module 4 ../spl/spl_progs/joel/module_4.xsm
+load --module 5 ../spl/spl_progs/joel/module_5.xsm
+load --module 7 ../spl/spl_progs/joel/boot_module.xsm
+load --int=4 ../spl/spl_progs/joel/int_4.xsm
+load --int=5 ../spl/spl_progs/joel/int5.xsm
+load --int=6 ../spl/spl_progs/joel/int6.xsm
+load --int=7 ../spl/spl_progs/joel/int7.xsm
+load --int=8 ../spl/spl_progs/joel/int8.xsm
+load --int=9 ../spl/spl_progs/joel/int9.xsm
+load --int=10 ../spl/spl_progs/joel/int10.xsm
+load --int=11 ../spl/spl_progs/joel/int11.xsm
+load --int=13 ../spl/spl_progs/joel/int13.xsm
+load --int=console ../spl/spl_progs/joel/console.xsm
+load --int=disk ../spl/spl_progs/joel/disk.xsm
+load --exhandler ../spl/spl_progs/joel/exhandler.xsm
+load --int=timer ../spl/spl_progs/joel/timer.xsm

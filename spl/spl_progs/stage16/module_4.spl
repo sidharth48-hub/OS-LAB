@@ -1,0 +1,75 @@
+breakpoint;
+alias functionNum R1;
+alias currentPID R2;
+alias word R3;
+
+breakpoint;
+
+/////////TERMINAL WRITE//////////
+if(functionNum==3) then
+    ////////ACQUIRE TERMINAL///////////
+    multipush(R1,R2,R3);
+    
+    alias function_number R1;
+    function_number = 8;
+    
+    alias PID R2;
+    PID = [SYSTEM_STATUS_TABLE + 1];
+    
+    call MOD_0;
+    
+    multipop(R1,R2,R3);
+    print word;
+    
+    
+    ////////////RELEASE TERMINAL////////
+    multipush(R1,R2,R3);
+    
+    function_number = 9;
+    PID = [SYSTEM_STATUS_TABLE + 1];
+    
+    call MOD_0;
+    
+    alias return_value R4;
+    return_value = R0;
+    
+    multipop(R1,R2,R3);
+
+    return;
+endif;
+
+/////////////TERMINAL READ//////////////
+
+if( functionNum == 4 ) then
+    ///////ACQUIRE TERMINAL////////
+    multipush(R1,R2,R3);
+    alias function_number R1;
+    function_number = 8;
+    
+    alias PID R2;
+    PID = [SYSTEM_STATUS_TABLE + 1];
+    
+    call MOD_0;
+    
+    multipop(R1,R2,R3);
+    read;
+
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 4] = WAIT_TERMINAL;
+    
+    multipush(R1,R2,R3);
+    call MOD_5;
+
+    multipop(R1,R2,R3);
+    
+    alias logical_address R3;
+    alias physical_address R6;
+
+    PTBR = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
+
+    physical_address = [PTBR + 2*(logical_address/512)]*512 + logical_address%512;
+
+    [physical_address]=[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 8];
+    return;
+endif;
+
+return;
