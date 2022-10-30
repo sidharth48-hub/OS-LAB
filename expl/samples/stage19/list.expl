@@ -1,0 +1,60 @@
+type
+linkedlist{
+    int data;
+    linkedlist next;
+}
+endtype
+
+decl
+  linkedlist head;
+enddecl
+
+int main()
+{
+    decl
+       str s1,s2,s3;
+       int n,temp,a;
+       linkedlist root,link;
+    enddecl
+    begin
+      s1="Enter N: ";
+      s2="Enter value: ";
+      s3="Values are: ";
+      temp=exposcall("Write",-2,s1);   
+      temp=exposcall("Read",-1,n);
+      
+      a=initialize();
+      
+      head=null;
+      root=head;
+      
+      breakpoint;
+      while(n!=0) do
+        temp=exposcall("Write",-2,s2);   
+        temp=exposcall("Read",-1,a);
+
+        link=alloc();
+        link.data=a;
+        link.next=null;
+
+        if(head==null) then
+           head=link;
+           root=link;
+        else
+           root.next=link;
+           root=root.next;
+        endif;
+
+        n=n-1;
+      endwhile;
+
+      root=head;
+      temp=exposcall("Write",-2,s3);   
+      while(root!=null) do 
+        temp=exposcall("Write",-2,root.data);
+        root=root.next;
+      endwhile;  
+
+      return 0;
+    end    
+}

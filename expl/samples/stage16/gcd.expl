@@ -1,0 +1,33 @@
+decl
+int euclid(int a,int b);
+enddecl
+
+int euclid(int a, int b)
+{
+   begin
+     while(a!=b) do
+        if(a>b) then
+           a=a-b;
+        else
+           b=b-a;
+        endif;
+     endwhile;
+     return a;
+   end           
+}
+
+int main()
+{
+    decl
+       int a,b,temp,num;
+    enddecl
+    begin
+       temp=exposcall("Read",-1,a);
+       temp=exposcall("Read",-1,b);
+
+       num = euclid(a,b);
+
+       temp = exposcall("Write",-2,num);
+       return 0;
+    end      
+}

@@ -1,0 +1,21 @@
+int main()
+{
+    decl
+       int temp,permission;
+       string out,file;
+    enddecl
+
+    begin
+       out = "Enter file: ";
+       temp = exposcall("Write",-2,out);
+       temp = exposcall("Read",-1,file);
+
+       temp = exposcall("Write",-2,file);
+
+
+       temp = exposcall("Delete",file);
+       temp = exposcall("Write",-2,"Done!!");
+
+       return 0;
+    end      
+}

@@ -1,0 +1,18 @@
+int main()
+{
+    decl
+      str fileName;
+      int temp;
+    enddecl
+
+    begin
+       temp = exposcall("Fork");
+       if(temp!=0) then
+           temp = exposcall("Exec","even.xsm");
+           temp = exposcall("Exit");
+       endif;
+
+       temp = exposcall("Exec","odd.xsm");
+       return 0;
+    end
+}
