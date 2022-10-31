@@ -12,7 +12,7 @@ if (functionNum == TERMINAL_WRITE) then
     multipush(R1,R2,R3);
     // Store the function number 8 in register R1 and PID of the current process from the System Status table in register R2 (Can use currentPID, as it already contain current PID value).
     R1 = ACQUIRE_TERMINAL; 
-    R2 = currentPID;// no use
+    R2 = currentPID;
     call RESOURCE_MANAGER; // MOD_0
     multipop(R1,R2,R3);
 

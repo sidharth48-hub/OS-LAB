@@ -16,15 +16,6 @@ loadi(17,30);
 loadi(65,7);
 loadi(66,8);
 
-// Load the EXEC program from the disk to the memory.
-// In Disk 70 - 71 , in memory 7 - 8
-loadi(85, 70);
-loadi(86, 73);
-
-// Load the EXEC  2 program from the disk to the memory.
-// In Disk 70 - 71 , in memory 7 - 8
-loadi(94, 71);
-loadi(95, 72);
 
 
 //Load the INT10 module from the disk to the memory.

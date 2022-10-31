@@ -25,7 +25,7 @@ alias fileName R4;
 fileName  = [[PTBR + 2*((userSP-4)/512)] * 512 + ((userSP-4)%512)] ;
 
 alias returnAddress R5;
-returnAddress = [[PTBR + 2*((userSP-3)/512)] * 512 + ((userSP-3)%512)] ;
+returnAddress = [PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512) ;
 
 
 
@@ -105,17 +105,19 @@ if(systemCallNum == 1) then //  Create
     alias rootFileEntryAddress R6;
     rootFileEntryAddress = ROOT_FILE + freeInodeIndex*8;
     
+
     // set the FILE NAME, FILE SIZE, FILE TYPE, USERNAME and PERMISSION fields.
     [rootFileEntryAddress] = fileName; // File Name 
     [rootFileEntryAddress+1] = 0; // File Size
     [rootFileEntryAddress+2] = DATA; // File Type  
     [rootFileEntryAddress+3] = [USER_TABLE + [processTableEntryAddress+3]*2]; // User Name
+    [rootFileEntryAddress+4] = permission; // Permission 
 
 endif;
 
 if(systemCallNum == 4) then // Delete
     // Find the index of the file in the Inode Table.
-     alias iter R5;
+    alias iter R5;
     iter = 0;
     alias inodeTableEntryAddress R6;
     alias inodeIndexOfFile R7;
