@@ -1,0 +1,252 @@
+alias system_call_num R1;
+alias process_table R2;
+alias userSP R3;
+alias currentPID R4;
+alias retAddr R5;
+alias currentUserID R6;
+alias username R7; 
+
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+userSP = SP;
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
+
+PTBR = [process_table + 14];
+
+system_call_num = [([PTBR + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+retAddr = ([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentUserID = [process_table + 3];
+username = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+
+[process_table + 9] = system_call_num;
+
+
+////////NEWUSR SYSTEM CALL////////
+if(system_call_num == 22) then
+    
+    alias password R8;
+    password = [([PTBR + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+
+    //if current user is not root or the current process is not shell
+    if(currentUserID != 1 || currentPID !=2) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    alias iter R9;
+    iter = 0;
+    
+    ///if user already exists
+    while(iter < MAX_USER_NUM) do
+       if([USER_TABLE + iter*2] == username) then
+           [retAddr] = -1;
+           [process_table + 9] = 0;
+           SP = [process_table + 13];
+           ireturn;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    ///checking for free user table
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == -1) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+    
+
+    //if no free entry
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -3;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+    
+
+    //encrypting password
+    encrypt password;
+
+    [USER_TABLE + iter*2] = username;
+    [USER_TABLE + iter*2 + 1] = password;
+
+    [retAddr] = 0;
+
+endif;
+
+
+////REMUSR SYSTEM CALL//////
+if(system_call_num == 23) then
+   
+    //if current user is not root or the current process is not shell
+    if(currentUserID != 1 || currentPID !=2) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+
+    //if user to removes id root or kernel
+    if(username == "root" || username == "kernel") then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    alias iter R8;
+    iter = 0;
+    
+    //find the entry
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    alias ute R9;
+    ute = USER_TABLE + iter*2;
+    
+    //if no such user exists
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    ///loop through the root file and check if a file of the user to be deleted exists
+    iter = 0;
+
+    while(iter < MAX_FILE_NUM) do
+        if([ROOT_FILE + iter*8 + 3] == username && [ROOT_FILE + iter*8] != -1) then
+            [retAddr] = -3;
+            SP = [process_table + 13];
+            [process_table + 9] = 0;
+            ireturn;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    [ute] = -1;
+    [ute + 1] = -1;
+
+    [retAddr] = 0;        
+
+endif;
+
+///////SETPWD SYSTEM CALL//////////
+if(system_call_num == 24) then
+    
+    alias password R8;
+    password = [([PTBR + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+    
+    if(currentPID !=2) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    alias iter R9;
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;        
+    
+    //if not root and not current user
+    if([process_table + 3] != iter && [process_table + 3] != 1) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    encrypt password;
+
+    [USER_TABLE + iter*2 + 1] = password;
+    [retAddr] = 0;    
+
+endif;      
+
+
+/////////GETUNAME SYSTEM CALL///////////
+if(system_call_num == 25) then
+    
+    alias userID R7;
+
+    if(userID < 0 || userID > 15) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+    
+    if([USER_TABLE + userID*2] == -1) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    [retAddr] = [USER_TABLE + userID*2];    
+
+endif;
+
+
+/////////GETUID SYSTEM CALL//////////
+if(system_call_num == 26) then
+    
+    alias iter R8;
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            [retAddr] = iter;
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    if(iter == MAX_USER_NUM) then
+       [retAddr] = -1;
+       [process_table + 9] = 0;
+       SP = [process_table + 13];
+       ireturn;
+    endif;   
+
+    [retAddr] = iter;        
+
+endif;  
+
+
+
+[process_table + 9] = 0;
+SP = [process_table + 13];
+ireturn;

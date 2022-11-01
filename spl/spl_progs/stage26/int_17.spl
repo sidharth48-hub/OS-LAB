@@ -1,0 +1,94 @@
+alias system_call_num R1;
+alias process_table R2;
+alias userSP R3;
+alias ptbr R4;
+alias retAddr R5;
+
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+ptbr = [process_table + 14];
+
+userSP = SP;
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
+
+
+system_call_num = [([ptbr + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+
+
+
+retAddr = ([ptbr + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512;
+
+[process_table + 9] = system_call_num;
+
+
+///////LOGIN SYSTEM CALL/////////
+if(system_call_num == 27) then
+    
+    alias username R6;
+    alias password R7;
+
+    username = [([ptbr + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
+    password = [([ptbr + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+    
+    ///if current PID is not 1
+    if([SYSTEM_STATUS_TABLE + 1] != 1) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+    
+
+    ///Getting user table entry
+    alias iter R8;
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+    
+    ///if user does not exists
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+    
+    ///encrypting password
+    encrypt password;
+    
+
+    ////if password is not correct
+    if([USER_TABLE + iter*2 + 1] != password) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;    
+    
+    //shell process
+    [PROCESS_TABLE + 2*16 + 4] = CREATED;
+    [PROCESS_TABLE + 2*16 + 3] = iter;//USERID
+    
+    [process_table + 4] = WAIT_PROCESS;
+    [process_table + 5] = 2;
+
+    [SYSTEM_STATUS_TABLE] = iter;
+
+    multipush(R1,R2,R3,R4,R5,R6,R7,R8);
+    call MOD_5;
+    multipop(R1,R2,R3,R4,R5,R6,R7,R8);
+
+    
+    [retAddr] = 0;
+    [process_table + 9] = 0;
+    SP = [process_table + 13];
+
+    ireturn;
+
+endif;    

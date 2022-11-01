@@ -14,8 +14,11 @@ int main()
 			temp = exposcall("Write", -2, "no such file!");
 		else
 			a = 0;
-			while(a != -2) do
+			while(a == 0) do
 				a = exposcall("Read",fileDesc,data);
+				if(a==-2) then
+				   break;
+				endif;   
 				temp = exposcall("Write",-2,data);
 			endwhile;
 			
