@@ -51,9 +51,12 @@ if(functionNum == 1 || functionNum == 2) then
     endif;
     
     if(functionNum == 1) then
+
+        //writing to a file
         [pageNum*512 + offset] =  word;
         [buffer_entry + 1] = 1;//DIRTY BIT
     else
+        //reading from a file
         //copying data to physical address
         [[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 14] + 2*(word/512)]*512 + (word%512)] = [pageNum*512 + offset];    
     endif;

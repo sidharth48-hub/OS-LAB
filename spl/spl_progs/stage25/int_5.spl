@@ -109,7 +109,9 @@ if(system_call_num == 6 || system_call_num == 3) then
 
 
     if(system_call_num == 6) then
-
+        
+        //seek system call//
+        
         alias inode_index R10;
         inode_index = [open_file_entry];
     

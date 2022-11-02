@@ -1,6 +1,10 @@
+
+//Switching to kernel stack//
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 15;
+
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 15; //MODE FLAG
 
 alias userSp R1;
 userSp = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
@@ -9,13 +13,14 @@ alias ptbr R2;
 ptbr = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
 
 
-breakpoint;
+//if current process is not shell or current user is not root//
 if( [SYSTEM_STATUS_TABLE + 1] != 2 || [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 3] != 1) then
 	[[ptbr + 2*((userSp-1)/512)] * 512 + (userSp-1)%512] = -1;
 	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
 	SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
 	ireturn;
 endif;
+
 
 //Invoking kill All//
 multipush(R1,R2);
@@ -54,13 +59,13 @@ while(iter < 4) do
 endwhile;            
 
 
-//inode table
+//inode table 
 multipush(R1,R2);
 R1 = 1;
 R2 = [SYSTEM_STATUS_TABLE + 1];
 R3 = 59;
 R4 = 3;
-call MOD_4;
+call MOD_4; //DISK STORE
 multipop(R1,R2);
 
 multipush(R1,R2);
