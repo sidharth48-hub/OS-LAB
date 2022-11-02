@@ -229,8 +229,9 @@ if (functionNum ==  BUFFERED_READ || functionNum == BUFFERED_WRITE) then
     endif;
 
     if(functionNum == BUFFERED_WRITE) then
+        alias word R4;
         // Write the contents of the word taken as input into the offset location in the buffer; 
-        [(BUFFER_BASE + bufferNumber)*512 + offset] = memoryAddress;//[[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 14] + 2 * (memoryAddress/512)] * 512 + (memoryAddress%512)];
+        [(BUFFER_BASE + bufferNumber)*512 + offset] = word;
 
         // Mark the buffer as Dirty;
         [bufferTableEntryAddress + 1] = 1;
