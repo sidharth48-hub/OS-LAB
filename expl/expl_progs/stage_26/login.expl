@@ -7,6 +7,7 @@ int main()
 	enddecl
 
 	begin
+			breakpoint;
 		while(1 == 1) do
 			temp = exposcall("Write", -2, "-Username-");
 			temp = exposcall("Read", -1, username);
@@ -16,7 +17,7 @@ int main()
 			temp = exposcall("Read", -1, pwd);
 			
 			temp = exposcall("Login",username,pwd);
-			// temp2 = exposcall("Write", -2, temp);
+
 			if(temp==-1)then
 				temp = exposcall("Write", -2, "Invalid Creds");
 			endif;

@@ -65,9 +65,9 @@ if(systemCallNum == 28) then // Logout
     [SYSTEM_STATUS_TABLE] = 0;
 
     // Invoke the context_switch() function in the Scheduler Module.
-    multipush(R1,R2,R3,R4,R5,R6,R7); // Save the registers
+    // multipush(R1,R2,R3,R4,R5,R6,R7); // Save the registers
     call SCHEDULER;
-    multipop(R1,R2,R3,R4,R5,R6,R7); // Restore the registers
+    // multipop(R1,R2,R3,R4,R5,R6,R7); // Restore the registers
 endif;
 
 // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.

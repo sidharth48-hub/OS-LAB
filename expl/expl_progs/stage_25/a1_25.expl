@@ -2,7 +2,7 @@ int main()
 {
 	decl
 		str name,data;
-		int temp,a,fileDesc,perm,num,count;
+		int temp,a,fileDesc,perm,num;
 	enddecl
 
 	begin
@@ -13,18 +13,17 @@ int main()
 		temp = exposcall("Create",name,perm);
 		fileDesc = exposcall("Open",name);
 		
-		
 
 		num = 1;
 		while(num < 10) do
-			temp = exposcall("Write",fileDesc,num); 
+			temp = exposcall("Write",fileDesc,num);
 			num = num + 1;
 		endwhile;
 		
-		// count = 0;
 		a = 0;
+		
 		a = exposcall("Seek",fileDesc,-1);
-		while(a != -2 ) do
+		while(a != -2) do
 			temp = exposcall("Read",fileDesc,data);
 			temp = exposcall("Write",-2,data);
 			a = exposcall("Seek",fileDesc,-2);
