@@ -64,7 +64,7 @@ else
                 processTableEntryAddress  = PROCESS_TABLE + 16 * iter; 
                 
                 // if any process has TICK greater than MAX_TICK
-                if([processTableEntryAddress+6]==1 && [processTableEntryAddress+4] == READY && ([processTableEntryAddress] > MAX_TICK || [SYSTEM_STATUS_TABLE+2] > MEM_HIGH )) then
+                if([processTableEntryAddress+6]==1 && ([processTableEntryAddress] > MAX_TICK || [SYSTEM_STATUS_TABLE+2] > MEM_HIGH )) then
 
                     // Set the Paging Status in System Status Table to SWAP_IN.
                     [SYSTEM_STATUS_TABLE+5] = SWAP_IN;                            
@@ -104,8 +104,8 @@ processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
 
 // increasing tick of every program
 alias iter R1;
-iter=0;
-while(iter<MAX_PROC_NUM) do
+iter=SHELL_PROCESS;
+while(iter<MAX_PROC_NUM-1) do
     [PROCESS_TABLE + iter*16 ] = [PROCESS_TABLE + iter*16] + 1;
     iter = iter +1;
 endwhile;
