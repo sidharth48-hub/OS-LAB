@@ -11,15 +11,11 @@
 
 // 4) Exception Memory Address (EMA) : Exception Memory Address register is relevant only in the case of illegal memory access. The illegal memory which was tried to be accessed is stored in the register. This field is relevant only when either the address referred to is outside the range 0 - 512*(PTLR-1) or a write is attempted to a page which is read-only.
 
-
-// Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
-[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+ 9] = -1;
 // Switch to the kernel stack and backup the register context and push EIP onto the stack.
 [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512  - 1 ;
 backup;
 multipush(EIP);
-
 alias userSP R1;
 
 alias lastStackPageNum R2;
@@ -36,6 +32,11 @@ ptbr = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 14];
 // If the cause of the exception is other than page fault (EC is not equal to 0) or if the user stack is full (when userSP is PTLR512-1, the return address can't be pushed onto the stack), then print a meaningful error message. Then invoke the Exit Process* function to halt the process and invoke the scheduler.
 
 if(EC!=0 || userSP==lastStackPageNum) then
+
+
+    breakpoint;
+    // Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+ 9] = -1;
 
     print "-------";
     print "Stack Oveflow";
@@ -64,13 +65,15 @@ if(EC!=0 || userSP==lastStackPageNum) then
     multipop(R0,R1,R2,R3,R4,R5);
 
     // Call Scheduler
-    multipush(R0,R1,R2,R3,R4,R5);
     call SCHEDULER;
-    multipop(R0,R1,R2,R3,R4,R5);
+  
 
 else
 
     // print "Page Fault";
+
+    // Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16)+ 9] = -1;
     
     // if the page that caused the exception is a code page
     // code pages are 4,5,6,7
@@ -78,12 +81,12 @@ else
         // get the code block number to be loaded from the disk map table. For this block, invoke the Get Code Page function present in the memory manager module. 
         alias codeBlockNumber R4;
         codeBlockNumber = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE+1] *10+ EPN];
-        multipush(R1,R2,R3,R4,R5);
+        multipush(R1,R2,R3,R4,R5,EPN);
         // Arguements are Block Number	
         R1 = GET_CODE_PAGE;
         R2 = codeBlockNumber;
         call MEMORY_MANAGER; // MOD 2
-        multipop(R1,R2,R3,R4,R5);
+        multipop(R1,R2,R3,R4,R5,EPN);
 
         // Update the page table entry for this code page,set the page number 
         // to memory page obtained fromGet Code Pagefunction and 
