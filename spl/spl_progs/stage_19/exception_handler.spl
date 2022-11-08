@@ -65,7 +65,6 @@ if(EC!=0 || userSP==lastStackPageNum) then
     multipop(R0,R1,R2,R3,R4,R5);
 
     // Call Scheduler
-
     call SCHEDULER;
   
 
@@ -82,12 +81,12 @@ else
         // get the code block number to be loaded from the disk map table. For this block, invoke the Get Code Page function present in the memory manager module. 
         alias codeBlockNumber R4;
         codeBlockNumber = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE+1] *10+ EPN];
-        multipush(R1,R2,R3,R4,R5);
+        multipush(R1,R2,R3,R4,R5,EPN);
         // Arguements are Block Number	
         R1 = GET_CODE_PAGE;
         R2 = codeBlockNumber;
         call MEMORY_MANAGER; // MOD 2
-        multipop(R1,R2,R3,R4,R5);
+        multipop(R1,R2,R3,R4,R5,EPN);
 
         // Update the page table entry for this code page,set the page number 
         // to memory page obtained fromGet Code Pagefunction and 
