@@ -30,7 +30,7 @@ if(EC != 0 || userSp == [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 15] 
 			print "ARITH ILLEGAL";
 		endif;
 	endif;
-	breakpoint;
+	// breakpoint;
 	
 	print "-------";
 	

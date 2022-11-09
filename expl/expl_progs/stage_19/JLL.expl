@@ -22,7 +22,7 @@ int main()
     
     head=null;
     read(length); 
-    breakpoint;
+    // breakpoint;
     q=head;
     while (length!=0)  do
       read(x);

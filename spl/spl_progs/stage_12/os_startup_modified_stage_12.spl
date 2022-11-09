@@ -139,7 +139,7 @@ PTBR = PAGE_TABLE_BASE+20; //29696+20 = 29716
 [PROCESS_TABLE + 15] = 10; // PTLR
 
 
-breakpoint;
+// breakpoint;
 
 SP = 8*512; //  accessing stack  from the page table using logical address
 [76*512] = [65 * 512 + 1]; // Since the first code page is loaded into memory page 65, the address of the second word in header is calculated as (65 * 512) + 1. This value is stored to the top of the user stack. 

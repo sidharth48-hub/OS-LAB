@@ -1,4 +1,4 @@
-breakpoint;
+// breakpoint;
 //Load the timer interrupt routine from disk blocks 17 and 18 to memory pages 4 and 5.
 loadi(4, 17);
 loadi(5, 18);

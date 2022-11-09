@@ -84,7 +84,6 @@ PORT P1, R16
 OUT
 _L6:
 _L4:
-BRKP
 MOV R16, "-------"
 PORT P1, R16
 OUT

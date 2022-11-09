@@ -1,4 +1,4 @@
-breakpoint;
+// breakpoint;
 // each entry in process table contains 16 words so we multiply by 16 
 // the 13th word had the UTPR
 // this code does UTPR = SP
@@ -37,5 +37,5 @@ restore;
 // this code does SP = UTPR;
 SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9]=0; // MODE
-breakpoint;
+// breakpoint;
 ireturn;

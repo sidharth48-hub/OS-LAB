@@ -7,7 +7,7 @@ enddecl
 
 begin
     pid=exposcall("Getpid");
-    breakpoint;
+    // breakpoint;
     if(pid==3) then
         filename="3.dat";
     endif;

@@ -8,7 +8,7 @@ int main()
 	begin
 		temp = exposcall("Write", -2, "Filename");
 		temp = exposcall("Read", -1, name);
-		breakpoint;
+		// breakpoint;
 		temp = exposcall("Exec",name);
 		return 0;
 	end

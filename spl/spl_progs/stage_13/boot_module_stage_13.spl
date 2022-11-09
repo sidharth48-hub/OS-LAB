@@ -1,4 +1,4 @@
-breakpoint;
+// breakpoint;
 //Load the timer interrupt routine from disk blocks 17 and 18 to memory pages 4 and 5.
 loadi(4, 17);
 loadi(5, 18);
@@ -41,7 +41,7 @@ loadi(3, 16);
 loadi(50,63);
 loadi(51,64);
 
-breakpoint;
+// breakpoint;
 // You need two pages for storing the INIT program code (loaded from disk blocks 7 and 8) and one additional page for stack (why?). Hence, PTLR is set to value 3.
 PTBR = PAGE_TABLE_BASE+20; //29696+20 = 29716
 
@@ -94,7 +94,7 @@ PTBR = PAGE_TABLE_BASE+20; //29696+20 = 29716
 
 // PROCESS 2 (EXEC)
 
-breakpoint;
+// breakpoint;
 // You need two pages for storing the INIT program code (loaded from disk blocks 7 and 8) and one additional page for stack (why?). Hence, PTLR is set to value 3.
 PTBR = PAGE_TABLE_BASE+40; //29696+40 = 29736
 

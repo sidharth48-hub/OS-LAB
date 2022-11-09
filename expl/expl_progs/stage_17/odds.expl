@@ -6,7 +6,7 @@ int main()
     enddecl
     begin
         i=1;
-        breakpoint;
+        // breakpoint;
         while(i<=100) do
             temp = exposcall("Write",-2,i);
             i=i+2;

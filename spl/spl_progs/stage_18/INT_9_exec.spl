@@ -148,7 +148,7 @@ while(count < MAX_FILE_NUM) do
             
             //initializing entry point ip
             if([PTBR + 8]==-1) then
-               breakpoint;
+               // breakpoint;
             endif;   
             [[PTBR+16]*512] = [[PTBR+8]*512 + 1];
 

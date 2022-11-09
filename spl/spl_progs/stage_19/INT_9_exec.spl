@@ -83,14 +83,14 @@ while(count < MAX_FILE_NUM) do
             R1=1;
             call MOD_2;
             [PTBR+16]=R0;
-            breakpoint;
+            // breakpoint;
             [PTBR+17]="0110";
             multipop(R0,R1,R2,R3,R4,R5,R6);
             
             multipush(R0,R1,R2,R3,R4,R5,R6);
             R1=1;
             call MOD_2;
-            breakpoint;
+            // breakpoint;
             [PTBR+18]=R0;
             [PTBR+19]="0110";
             multipop(R0,R1,R2,R3,R4,R5,R6);
@@ -105,7 +105,7 @@ while(count < MAX_FILE_NUM) do
                 multipush(EPN);
                 R1=5;
                 R2=[INODE_TABLE+(inode_index*16)+8];
-                breakpoint;
+                // breakpoint;
                 call MOD_2;
                 multipop(EPN);
                 multipop(R1,R2,R3,R4,R5,R6,R9);
@@ -128,7 +128,7 @@ while(count < MAX_FILE_NUM) do
             [PTBR+14]=-1;
             [PTBR+15]="0000";  
             
-            breakpoint;
+            // breakpoint;
             //initializing entry point ip
             [[PTBR+16]*512] = [[PTBR+8]*512 + 1];
 

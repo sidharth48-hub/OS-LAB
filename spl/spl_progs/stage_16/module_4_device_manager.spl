@@ -1,9 +1,9 @@
-breakpoint;
+// breakpoint;
 alias functionNum R1;
 alias currentPID R2;
 alias word R3;
 
-breakpoint;
+// breakpoint;
 
 /////////TERMINAL WRITE//////////
 if(functionNum==3) then

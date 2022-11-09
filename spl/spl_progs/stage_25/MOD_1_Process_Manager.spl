@@ -5,9 +5,9 @@ alias PID R2;
 
 if(func_number==1) then
     alias iter R3;
-    iter=0;
+    iter=3;
 
-    while(iter<16) do
+    while(iter<15) do
       if([PROCESS_TABLE + iter*16 + 4] == TERMINATED) then
           [PROCESS_TABLE + iter*16 + 1]=iter;
           [PROCESS_TABLE + iter*16 + 4]=ALLOCATED;
