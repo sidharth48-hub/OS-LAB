@@ -116,8 +116,10 @@ while(count < MAX_FILE_NUM) do
             while(count<4) do
                 if([INODE_TABLE+(inode_index*16)+8+count]!=-1) then
                     multipush(R1,R2,R3,R4,R5,R6,R9);
+                    multipush(EPN);
                     R1=1;
                     call MOD_2;
+                    multipop(EPN);
                     multipop(R1,R2,R3,R4,R5,R6,R9);
                     R10 = [INODE_TABLE+(inode_index*16)+8+count];
                     
@@ -145,6 +147,9 @@ while(count < MAX_FILE_NUM) do
             endwhile;  
             
             //initializing entry point ip
+            if([PTBR + 8]==-1) then
+               breakpoint;
+            endif;   
             [[PTBR+16]*512] = [[PTBR+8]*512 + 1];
 
 

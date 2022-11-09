@@ -1,3 +1,3 @@
 cd ../xfs-interface
-./xfs-interface run ../spl/spl_progs/stage26/all.batch
+./xfs-interface run ../spl/spl_progs/stage27/all.batch
 echo "Loaded"

@@ -6,6 +6,47 @@ SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1] * 16) + 11] * 512 - 1;
 //Saving user context to kernel stack
 backup;
 
+//if swapping is intitiated
+if([SYSTEM_STATUS_TABLE + 5] != 0) then
+	
+	//if swapper daemon is being executed
+	if([SYSTEM_STATUS_TABLE + 1] == 15) then
+		if([SYSTEM_STATUS_TABLE + 5] == SWAP_OUT) then
+			R1 = SWAP_OUT;
+			R2 = [SYSTEM_STATUS_TABLE + 1];
+			call MOD_6;
+		else
+			R1 = SWAP_IN;
+			R2 = [SYSTEM_STATUS_TABLE + 1];
+			call MOD_6;
+		endif;
+	
+	endif;
+else
+	
+	if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+		[SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
+	else
+		//if swapped count is greater than 0
+		if([SYSTEM_STATUS_TABLE + 4] > 0) then
+			
+			R1 = 3;
+			while(R1 < 15) do
+				if([PROCESS_TABLE + R1*16 + 6] == 1 && [PROCESS_TABLE + R1*16 + 4] == READY && [PROCESS_TABLE + R1*16] > MAX_TICK) then
+					[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+					break;
+				endif;
+				R1 = R1 + 1;
+			endwhile;
+			
+			if([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
+				[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+			endif;
+		endif;
+	endif;
+
+endif;
+
 
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
 
@@ -33,3 +74,5 @@ SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1] * 16) + 13];
 
 
 ireturn;
+
+

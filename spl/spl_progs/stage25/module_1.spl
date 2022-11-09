@@ -57,6 +57,7 @@ if( func_number==2 ) then
        endif;
 
        [(user_area_page_number)*512 + 496 + 2*iter] = -1;
+       [(user_area_page_number)*512 + 496 + 2*iter + 1] = -1;
 
        iter = iter + 1;
     endwhile;

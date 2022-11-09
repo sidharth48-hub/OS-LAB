@@ -23,7 +23,6 @@ R1=1;
 call MOD_1;
 multipop(R1,R2,R3,R4,R5,R6,R7);
 
-
 child_PID = R0;
 child_pt_entry = PROCESS_TABLE + child_PID*16;
 
@@ -206,5 +205,4 @@ parentSP_ret = [process_table_entry + 13] - 1;
 
 [process_table_entry + 9]=0;
 SP = userSP;
-
 ireturn;

@@ -1,0 +1,263 @@
+alias function_num R1;
+alias PID R2;
+
+//////////SWAP_OUT///////////
+
+if(function_num == SWAP_OUT) then
+     
+    alias iter R3;
+    alias process_table R4;
+    alias swapOutPID R5; //index of the entry to be swapped out
+
+
+    alias WaitPID R6;
+    alias SemPID R7;
+    alias TickCount R8;
+    alias TickPID R9;
+
+    iter = SHELL_PROCESS + 1;
+    WaitPID = -1;
+    SemPID = -1;
+    TickCount = -1;
+    TickPID = -1;
+    swapOutPID = -1;
+
+    
+    while(iter < SWAPPER_DAEMON) do
+        
+        process_table = PROCESS_TABLE + iter*16; 
+        
+        if([process_table + 6] != 1) then
+             
+            if([process_table + 4] == WAIT_PROCESS) then
+                WaitPID = iter;
+                break;
+            endif;
+
+            if([process_table + 4] == WAIT_SEMAPHORE) then
+                SemPID = iter;
+            endif;
+
+            if([process_table] > TickCount && [process_table + 6] == 0 && [process_table + 4] != RUNNING && [process_table + 4] != ALLOCATED && [process_table + 4] != TERMINATED) then
+                TickCount = [process_table];
+                TickPID = iter;
+            endif;
+        endif;    
+        
+        iter = iter + 1;      
+
+    endwhile;   
+    
+
+    if(WaitPID != -1) then
+       swapOutPID = WaitPID;
+    else
+        if(SemPID != -1) then
+            swapOutPID = WaitPID;
+        else
+            if(TickCount != -1) then
+               swapOutPID = TickPID;
+            else
+
+                [SYSTEM_STATUS_TABLE + 5] = 0;
+                return;
+            endif;
+        endif;
+    endif;
+
+    
+    process_table = PROCESS_TABLE + swapOutPID*16;
+    [process_table] = 0;//TICK
+
+    
+    //heap, code and stack pages
+
+    alias ptbr R6;
+    ptbr = [process_table + 14];
+    
+    alias codePage R7;
+
+    iter = 8;
+    while(iter < 16) do
+       codePage = ptbr + iter;
+
+       if([codePage] != -1) then
+           
+           multipush(R1,R2,R3,R4,R5,R6,R7);
+           R1 = RELEASE_PAGE;
+           R2 = [codePage];
+           call MOD_2;
+           multipop(R1,R2,R3,R4,R5,R6,R7);
+
+           [codePage] = -1;
+           [codePage + 1] = "0000";
+
+       endif;
+
+       iter = iter + 2;   
+    endwhile;
+
+    alias disk_map_table R7;
+    disk_map_table = DISK_MAP_TABLE + swapOutPID*10;
+
+    alias pageAddress R8;
+
+    iter = 4;
+
+    while(iter < 20) do
+        pageAddress = ptbr + iter;
+        
+        if([pageAddress] != -1 && [MEMORY_FREE_LIST + [pageAddress]] == 1) then
+            
+            multipush(R1,R2,R3,R4,R5,R6,R7,R8);
+            multipush(R2);
+            R1 = GET_SWAP_BLOCK;
+            call MOD_2;
+
+            alias blockNumber R0;
+            multipop(R2);
+            
+            multipush(R0);
+            multipush(R8);
+            R1 = DISK_STORE;
+            R2 = PID;
+            R3 = [pageAddress];
+            R4 = blockNumber;
+            call MOD_4;
+            multipop(R8);
+
+            R1 = RELEASE_PAGE;
+            R2 = [pageAddress];
+            call MOD_2;
+
+            multipop(R0);
+            
+            multipop(R1,R2,R3,R4,R5,R6,R7,R8);
+
+            [disk_map_table + iter/2] = blockNumber;
+
+            [pageAddress] = -1;
+            [pageAddress + 1] = "0000";
+
+        endif;
+
+        iter = iter + 2;
+
+        if(iter == 8) then
+           iter = 16;
+        endif;       
+    endwhile;                   
+    
+
+    [process_table + 6] = 1;//swap flag
+    [SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] + 1; //swapped_count
+    [SYSTEM_STATUS_TABLE + 5] = 0;//paging_status
+
+    return;
+
+endif;
+
+
+////////SWAP_IN//////////
+if(function_num == SWAP_IN) then
+   
+    alias iter R3;
+    alias swapOutPID R4;
+    alias process_table R5;
+    alias TickCount R6;
+
+    swapOutPID = -1;
+    TickCount = -1;
+    iter = SHELL_PROCESS + 1;
+
+    while(iter < SWAPPER_DAEMON) do
+        process_table = PROCESS_TABLE + iter*16;
+
+        if([process_table + 6] == 1 && [process_table + 4] == READY && [process_table] > TickCount) then
+            swapOutPID = iter;
+            TickCount = [process_table];
+        endif;            
+        
+        iter = iter + 1;
+    endwhile;
+    
+    //no process to swap in
+    if(swapOutPID == -1) then
+       [SYSTEM_STATUS_TABLE + 5] = 0;
+       return;
+    endif;
+    
+    process_table = PROCESS_TABLE + swapOutPID*16;
+
+    [process_table] = 0;
+
+    alias ptbr R6;
+    ptbr = [process_table + 14];
+   
+    alias disk_map_table R7;
+    disk_map_table = DISK_MAP_TABLE + swapOutPID*10;
+
+    iter = 2;
+    while(iter < 10) do
+        
+        alias blockNumber R8;
+        blockNumber = [disk_map_table + iter];
+
+        if([blockNumber] != - 1) then
+
+
+                multipush(R1,R2,R3,R4,R5,R6,R7,R8);
+                multipush(R2);
+                multipush(R8);
+
+                R1 = GET_FREE_PAGE;
+                call MOD_2;
+
+                alias pageNum R0;
+
+                multipop(R8);
+                multipop(R2);
+
+                multipush(R0);
+                multipush(R2);
+                multipush(R8);
+
+                R1 = DISK_LOAD;
+                R2 = PID;
+                R3 = pageNum;
+                R4 = blockNumber;
+                call MOD_4;
+                
+                multipop(R8);
+
+                multipop(R2);
+
+                R1 = RELEASE_BLOCK;
+                R2 = blockNumber;
+                R3 = PID;
+                call MOD_2;
+                multipop(R0);
+                multipop(R1,R2,R3,R4,R5,R6,R7,R8);
+
+
+
+                [ptbr + 2*iter] = pageNum;
+                [ptbr + 2*iter + 1] = "0110";
+
+                [disk_map_table + iter] = -1;
+
+        endif;        
+
+        iter = iter + 1;
+        if(iter == 4) then
+           iter = 8;
+        endif;   
+    endwhile;
+
+    [PROCESS_TABLE + swapOutPID*16 + 6] = 0;
+    [SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] - 1;
+    [SYSTEM_STATUS_TABLE + 5] = 0;
+
+    return;       
+
+endif;
