@@ -1,118 +1,120 @@
-//Function number is present in R1 and PID passed as an argument is stored in R2. Give meaningful names to these registers to use them further.
 alias functionNum R1;
-alias currentPID R2;
 
-if(functionNum == ACQUIRE_TERMINAL) then // Aquire Terminal
-    while([TERMINAL_STATUS_TABLE]==1) do
-        [PROCESS_TABLE +16*currentPID+ 4] = WAIT_TERMINAL; 
+
+////////ACQUIRE DISK///////////
+if(functionNum==3) then
+    
+    alias currentPID R2;
+
+    while( [DISK_STATUS_TABLE]==1 ) do
+        [PROCESS_TABLE+currentPID*16+4]=WAIT_DISK;
         multipush(R1,R2);
-        call SCHEDULER;
+        call MOD_5;
         multipop(R1,R2);
+        
     endwhile;
-    [TERMINAL_STATUS_TABLE]=1;
-    [TERMINAL_STATUS_TABLE+1] = currentPID;
-    return;
-endif;
 
-if(functionNum == RELEASE_TERMINAL) then // Release Terminal
-    if(currentPID !=  [TERMINAL_STATUS_TABLE+1]) then
-        R0=-1;
-        return;
-    else 
-        [TERMINAL_STATUS_TABLE]=0;
-        alias iter R5;
-        iter = 1;
-        while(iter <  16) do
-            if (([PROCESS_TABLE +16*iter+ 4] == WAIT_TERMINAL)) then
-                [PROCESS_TABLE +16*iter+ 4] = READY;
-            endif;
-            iter=iter+1;
-        endwhile;
-        R0=0;
-        return;
-    endif;
-endif;
-
-if(functionNum == ACQUIRE_DISK) then // Aquire Disk 
-    while([DISK_STATUS_TABLE]==1) do
-        [PROCESS_TABLE +16*currentPID+ 4] = WAIT_DISK; 
-        multipush(R1,R2);
-        call SCHEDULER;
-        multipop(R1,R2);
-    endwhile;
     [DISK_STATUS_TABLE]=1;
-    [DISK_STATUS_TABLE+4] = currentPID;
+    [DISK_STATUS_TABLE+4]=currentPID;
     return;
 endif;
-return;
 
-if(functionNum == ACQUIRE_SEMAPHORE) then // Aquire Semaphore 
-    // PID is in R2 register
 
-    alias count R3;
-    alias semaphoreTableEntryAddress R4;
-    alias freeSemaphore R0;
-    count =0;
-    freeSemaphore = -1;
+//////////ACQUIRE SEMAPHORE/////////
+if(functionNum == 6) then
 
-    while(count <  MAX_SEM_COUNT) do // 32
+    alias PID R2;
 
-        // Each semaphore table entry is of size 4 words of which the last two are unused.
-        // LOCKING PID (1 word)- specifies the PID of the process which has locked the semaphore. The entry is set to -1 if the semaphore is not locked by any processes.
-        // PROCESS COUNT (1 word) - specifies the number of processes which are sharing the semaphore. A value of 0 indicates that the semaphore has not been acquired by any process.
-        // Unused (2 words)
-
-        semaphoreTableEntryAddress = SEMAPHORE_TABLE + count * 4;
-
-        // A free entry in the semophore table is indicated by process count 0
-        if([semaphoreTableEntryAddress+1] == 0) then
-            freeSemaphore = count;
-            break;
+    alias iter R3;
+    iter = 0;
+    
+    while(iter < MAX_SEM_COUNT) do
+        if([SEMAPHORE_TABLE + 1 + iter*4]==0) then
+            [SEMAPHORE_TABLE + 1 + iter*4]=1;//PROCESS COUNT
+            [SEMAPHORE_TABLE + 0 + iter*4]=-1;//LOCKING PID
+            R0=iter;
+            return;
         endif;
-        count = count +1;
+
+        iter = iter + 1;
     endwhile;
-
-    // if no free entry return -1
-    if(freeSemaphore == -1) then
-        return;
-    endif;
-
-    [semaphoreTableEntryAddress] = -1; //  LOCKING_PID
-    [semaphoreTableEntryAddress+1] = 1; // PROCESS_COUNT
-
+    R0=-1;        
     return;
-
 endif;
 
-if(functionNum == RELEASE_SEMAPHORE) then // Release Semaphore 
-    alias semaphoreTableIndex R2;
-    alias currentPID R3;
-    alias semaphoreTableEntryAddress R4;
+///////////RELEASE SEMAPHORE//////////
 
-    semaphoreTableEntryAddress = SEMAPHORE_TABLE + semaphoreTableIndex * 4;
+if(functionNum == 7) then
+    
+    alias semID R2;
+    alias PID R3;
 
-    // If the semaphore is locked by the current proces (Check the Locking PID in the Semaphore table)
-    if([semaphoreTableEntryAddress] == currentPID) then
-        //  Set the Locking PID to -1. (Unlock the semaphore before release )
-        [semaphoreTableEntryAddress] = -1;
+    if([SEMAPHORE_TABLE + 0 + semID*4] == PID) then
+        [SEMAPHORE_TABLE + 0 + semID*4]=-1;
 
-        // loop through the process table and check if any process is waiting for the semaphore and change it to ready
-        alias iter R5;
+        alias iter R4;
         iter = 0;
-        while(iter <  16) do
-            if (([PROCESS_TABLE +16*iter+ 4] == WAIT_SEMAPHORE && [PROCESS_TABLE +16*iter+ 5] == semaphoreTableIndex )) then
-                [PROCESS_TABLE +16*iter+ 4] = READY;
+
+        while(iter<16) do
+            if(([PROCESS_TABLE + iter*16 + 4] == WAIT_SEMAPHORE) && ([PROCESS_TABLE + iter*16 + 5] == semID)) then
+                 [PROCESS_TABLE + iter*16 + 4] = READY;
             endif;
-            iter=iter+1;
+            iter = iter + 1;
         endwhile;
 
-        // Decrement the process count of the semaphore in the semaphore table.
-        [semaphoreTableEntryAddress+1] = [semaphoreTableEntryAddress+1] -1; //  When the count becomes 0, the semaphore is free. 
-        R0 = 0;
-    else 
-        R0 = -1;
+        [SEMAPHORE_TABLE + 1 + semID*4] = [SEMAPHORE_TABLE + 1 + semID*4] - 1;
     endif;
 
+    R0 = 0;
     return;
 
 endif;
+     
+
+
+
+/////////ACQUIRE TERMINAL////////
+if(functionNum==8) then
+   
+   alias currentPID R2;
+
+   while( [TERMINAL_STATUS_TABLE] == 1 ) do
+      [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
+      multipush(R1,R2);
+      call MOD_5;
+      multipop(R1,R2);
+   endwhile ;
+
+   [TERMINAL_STATUS_TABLE] = 1;
+   [TERMINAL_STATUS_TABLE + 1] = currentPID;
+   return;
+endif;
+
+
+
+
+////////RELEASE TERMINAL/////////
+
+if(functionNum == 9) then
+   
+   alias return_value R0;
+   alias currentPID R2;
+   if(currentPID!=[TERMINAL_STATUS_TABLE+1]) then
+      return_value = -1;
+      return;
+   endif;
+
+   [TERMINAL_STATUS_TABLE]=0;
+
+   alias PID R3;
+   PID = 1;
+   while(PID<16) do
+      if([PROCESS_TABLE + PID*16 +4]==WAIT_TERMINAL) then
+          [PROCESS_TABLE + PID*16 +4]=READY;
+      endif;
+      PID = PID + 1;
+   endwhile;
+
+   return_value = 0;
+   return;
+endif;          

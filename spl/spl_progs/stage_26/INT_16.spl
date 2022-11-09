@@ -1,288 +1,252 @@
-// Arguements are User name, Password
-// At the beginning of interrupt routine 17, extract the system call number from the user stack and switch to the kernel stack.
-alias userSP R1;
-alias userName R2;
-alias processTableEntryAddress R3;
-alias returnAddress R4;
-alias systemCallNum R5;
+alias system_call_num R1;
+alias process_table R2;
+alias userSP R3;
+alias currentPID R4;
+alias retAddr R5;
+alias currentUserID R6;
+alias username R7; 
 
-processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
-// Save the user stack pointer in the process table
-[processTableEntryAddress + 13]= SP;
+process_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
 
-// switch to the kernel stack
-SP = [processTableEntryAddress + 11] * 512  - 1 ;
-PTBR = [processTableEntryAddress + 14] ;
+userSP = SP;
+[process_table + 13]=SP;
+SP = [process_table + 11]*512 - 1;
 
-userSP = [processTableEntryAddress + 13];
+PTBR = [process_table + 14];
 
-systemCallNum = [[PTBR + 2*((userSP-5)/512)] * 512 + ((userSP-5)%512)] ;
-// Change the MODE FLAG in the process tableto the system call number.
-[processTableEntryAddress + 9] = systemCallNum;
+system_call_num = [([PTBR + 2*((userSP - 5)/512)]*512) + (userSP - 5) % 512];
+retAddr = ([PTBR + 2*((userSP - 1)/512)]*512) + (userSP - 1) % 512;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentUserID = [process_table + 3];
+username = [([PTBR + 2*((userSP - 4)/512)]*512) + (userSP - 4) % 512];
 
-
-
-
-// Extract the userName from the stack
-userName = [[PTBR + 2*((userSP-4)/512)] * 512 + ((userSP-4)%512)] ;
-
-returnAddress = [PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512) ;
+[process_table + 9] = system_call_num;
 
 
-if(systemCallNum == 22) then// Newusr 
-    // Arguements are User name, Password
-    // Extract the password
-    alias password R6;
-    password  = [[PTBR + 2*((userSP-3)/512)] * 512 + ((userSP-3)%512)] ;
-
-    // If the current user is not root (userId = 1), or if the current process is not the shell (PID=2), return -2.
-    if([SYSTEM_STATUS_TABLE] !=  1 || [SYSTEM_STATUS_TABLE+1] != 2)then
-        [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-
-    // Loop through the User Table and exit returning -1 if an entry for the user already exists.
-    alias userTableEntryAddress R7;
-    alias iter R8;
-    userTableEntryAddress = -1;
-    iter = 0;
-    while(iter < MAX_USER_NUM) do
-        if([USER_TABLE + iter*2] == userName) then
-            [returnAddress] = -1;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
-            ireturn;
-        endif;
-        
-        // Find a free entry in the User Table. 
-        if(userTableEntryAddress ==-1 && [USER_TABLE + iter*2] == -1) then
-            userTableEntryAddress = USER_TABLE+iter*2;
-        endif;
-
-        iter=iter+1;
-    endwhile;
-
-
-    // If no free entry is found in the user table, return -3.
-    if(userTableEntryAddress == -1)then
-        [returnAddress] = -3;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-    // Find the encrypted password by applying the ENCRYPT instruction on the input password.
-    encrypt password;
-    alias encryptedPassword R6;
-
-    // Set the USERNAME and ENCRYPTED PASSWORD fields of the User Table entry.
-    [userTableEntryAddress] = userName;
-    [userTableEntryAddress+1] = encryptedPassword;
-
-    // return 0
-    [returnAddress] = 0;
-
-endif;
-
-if(systemCallNum == 23)then // Remusr
-    // Arguements are User name
-
-    // If the current user is not root (userId = 1), or if the current process is not the shell (PID=2), return -2.
-    if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE+1] != 2) then
-        [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-    // If the user to be removed is the "root" or "kernel" return -2.
-    if(userName == "root" || userName == "kernel") then
-        [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-    // Loop through the User Table and find the entry curresponding to the user.
-    alias userTableEntryAddress R6;
-    alias iter R7;
-    userTableEntryAddress = -1;
-    iter = 0;
-    while(iter < MAX_USER_NUM) do
-        if([USER_TABLE+iter*2] == userName) then
-            userTableEntryAddress = USER_TABLE + iter*2;
-            break;
-        endif;
-        iter = iter+1;
-    endwhile;
-
+////////NEWUSR SYSTEM CALL////////
+if(system_call_num == 22) then
     
-    // If the entry is not found, return -1.
-    if(userTableEntryAddress == -1) then
-        [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
+    alias password R8;
+    password = [([PTBR + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+
+    //if current user is not root or the current process is not shell
+    if(currentUserID != 1 || currentPID !=2) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
         ireturn;
     endif;
 
-    // Loop through the Root File and exit returning -3 if there are files of the user present on disk.
-    iter = 0;
-
-    while(iter < MAX_FILE_NUM) do // 60 
-
-        if([ROOT_FILE+iter*8+3] == userName) then
-            [returnAddress] = -3;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
-            ireturn;
-        endif;
-
-        iter = iter+1;
-    endwhile;
-
-    // Invalidate the entry by setting the USERNAME and ENCRYPTED PASSWORD fields to -1.
-    [userTableEntryAddress] = -1;
-    [userTableEntryAddress+1] = -1;
-
-    // return 0
-    [returnAddress] = 0;
-
-endif;
-
-if(systemCallNum == 24) then// Setpwd
-    // Arguements are User name, Password
-    // Extract the password
-    alias password R6;
-    password  = [[PTBR + 2*((userSP-3)/512)] * 512 + ((userSP-3)%512)] ;
-
-
-    // if the current process is not the shell (PID=2), return -1.
-    if( [SYSTEM_STATUS_TABLE+1] != 2)then
-        [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-    // Loop through the User Table and finds the entry curresponding to the user name.
-    alias userId R7;
-    alias userTableEntryAddress R8;
     alias iter R9;
     iter = 0;
-    userId = -1;
+    
+    ///if user already exists
     while(iter < MAX_USER_NUM) do
-        userTableEntryAddress = USER_TABLE + iter *2;
-        if([userTableEntryAddress] == userName) then
-            userId = iter;
+       if([USER_TABLE + iter*2] == username) then
+           [retAddr] = -1;
+           [process_table + 9] = 0;
+           SP = [process_table + 13];
+           ireturn;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    ///checking for free user table
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == -1) then
             break;
         endif;
-        iter = iter +1;
+
+        iter = iter + 1;
     endwhile;
     
+
+    //if no free entry
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -3;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
     
 
-    // If entry is not found, return -2.
-    if( userId == -1)then
-        [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
+    //encrypting password
+    encrypt password;
+
+    [USER_TABLE + iter*2] = username;
+    [USER_TABLE + iter*2 + 1] = password;
+
+    [retAddr] = 0;
+
+endif;
+
+
+////REMUSR SYSTEM CALL//////
+if(system_call_num == 23) then
+   
+    //if current user is not root or the current process is not shell
+    if(currentUserID != 1 || currentPID !=2) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
         ireturn;
     endif;
 
-    // If (userid of the process is not equal to the userid of the user) 
-    if([SYSTEM_STATUS_TABLE] != userId) then
-        //  If (the current user is not root) return -1
-        if([SYSTEM_STATUS_TABLE] != 1) then
-            [returnAddress] = -1;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
+
+    //if user to removes id root or kernel
+    if(username == "root" || username == "kernel") then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    alias iter R8;
+    iter = 0;
+    
+    //find the entry
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    alias ute R9;
+    ute = USER_TABLE + iter*2;
+    
+    //if no such user exists
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    ///loop through the root file and check if a file of the user to be deleted exists
+    iter = 0;
+
+    while(iter < MAX_FILE_NUM) do
+        if([ROOT_FILE + iter*8 + 3] == username && [ROOT_FILE + iter*8] != -1) then
+            [retAddr] = -3;
+            SP = [process_table + 13];
+            [process_table + 9] = 0;
             ireturn;
         endif;
 
-    endif;
-
-    // Find the encrypted password by applying the ENCRYPT instruction on the input password.
-    encrypt password;
-    alias encryptedPassword R6;
-
-    // Set the ENCRYPTED PASSWORD field in the user table entry.
-    [userTableEntryAddress+1] = encryptedPassword;
-
-    // return 0
-    [returnAddress] = 0;
-
-
-endif;
-
-if(systemCallNum == 25) then// Getuname
-    // Arguements are User ID
-    alias userId R2;
-
-    // If (UserID < 0 or UserID > 15) Return -1
-    if(userId < 0 || userId >15) then
-        [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-
-    alias userTableEntryAddress R6;
-    userTableEntryAddress = USER_TABLE + userId*2;
-    
-    // If the user table entry curresponding to the userid is invalid, return -1.
-    if([userTableEntryAddress] == -1) then
-        [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
-        ireturn;
-    endif;
-
-    // Fetch the user name from the User Table and return it
-    [returnAddress] = [userTableEntryAddress];
-
-
-
-endif;
-
-if(systemCallNum == 26) then // Getuid
-    // Arguements are User name
-
-    alias userId R6;
-    alias iter R7;
-    userId = -1;
-    iter = 0;
-
-    while(iter<MAX_USER_NUM) do
-        if([USER_TABLE+iter*2] == userName ) then
-            userId = iter;
-        endif;
-        iter= iter+1;
+        iter = iter + 1;
     endwhile;
 
-    [returnAddress] = userId;
+    [ute] = -1;
+    [ute + 1] = -1;
+
+    [retAddr] = 0;        
+
+endif;
+
+///////SETPWD SYSTEM CALL//////////
+if(system_call_num == 24) then
     
+    alias password R8;
+    password = [([PTBR + 2*((userSP - 3)/512)]*512) + (userSP - 3) % 512];
+    
+    if(currentPID !=2) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    alias iter R9;
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    if(iter == MAX_USER_NUM) then
+        [retAddr] = -2;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;        
+    
+    //if not root and not current user
+    if([process_table + 3] != iter && [process_table + 3] != 1) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    encrypt password;
+
+    [USER_TABLE + iter*2 + 1] = password;
+    [retAddr] = 0;    
+
+endif;      
+
+
+/////////GETUNAME SYSTEM CALL///////////
+if(system_call_num == 25) then
+    
+    alias userID R7;
+
+    if(userID < 0 || userID > 15) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+    
+    if([USER_TABLE + userID*2] == -1) then
+        [retAddr] = -1;
+        [process_table + 9] = 0;
+        SP = [process_table + 13];
+        ireturn;
+    endif;
+
+    [retAddr] = [USER_TABLE + userID*2];    
+
 endif;
 
 
-// At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-[processTableEntryAddress + 9] = 0;
-SP = [processTableEntryAddress + 13];
+/////////GETUID SYSTEM CALL//////////
+if(system_call_num == 26) then
+    
+    alias iter R8;
+    iter = 0;
+
+    while(iter < MAX_USER_NUM) do
+        if([USER_TABLE + iter*2] == username) then
+            [retAddr] = iter;
+            break;
+        endif;
+
+        iter = iter + 1;
+    endwhile;
+
+    if(iter == MAX_USER_NUM) then
+       [retAddr] = -1;
+       [process_table + 9] = 0;
+       SP = [process_table + 13];
+       ireturn;
+    endif;   
+
+    [retAddr] = iter;        
+
+endif;  
+
+
+
+[process_table + 9] = 0;
+SP = [process_table + 13];
 ireturn;
-
-

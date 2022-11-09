@@ -1,34 +1,23 @@
-// The console interrupt handler is entered while some other process is executing in the user mode. The handler must switch to the kernel stack of that process, do the interrupt handling, restore the user stack of the process that was running and return control back to the process
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE +  1]*16) + 11]*512 + 1;
 
-
-// Store the SP value in the UPTR field in the process table entry of the currently running process.
-[PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 13] = SP;
-
-// Initialize SP (kernel stack pointer) to (user area page number)*512 -1. //Switch to the kernel stack.
-SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 11] * 512 - 1;
 backup;
 
 alias reqPID R0;
-alias reqProcessTableEntry R1;
-reqPID = [TERMINAL_STATUS_TABLE+1];
-reqProcessTableEntry = PROCESS_TABLE + 16 * reqPID;
-// breakpoint;
-[reqProcessTableEntry+8] =  P0;
-// breakpoint;
+reqPID = [TERMINAL_STATUS_TABLE + 1];
 
-// next release the terminal 
+alias process_table_entry R1;
+process_table_entry = PROCESS_TABLE + reqPID*16;
+
+[process_table_entry + 8] = P0;
+
 multipush(R0,R1);
 R1 = 9;
-R2 = reqPID; // The current process did not acquire the terminal. The process with reqPID as PID is holding the terminal.
-
-call RESOURCE_MANAGER;
-
-// Ignore the return value and restore the registers pushed before.
-
+R2 = reqPID;
+call MOD_0;
 multipop(R0,R1);
 
-
 restore;
-// Change SP to UPTR field from the process table entry of the currently running process and return to the user mode. //Switch back to us er stack
-SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 13];
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13];
 ireturn;

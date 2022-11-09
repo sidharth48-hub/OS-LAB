@@ -1,145 +1,146 @@
-alias functionNum R1;
-alias processId R2;
+alias func_number R1;
+alias PID R2;
 
-if(functionNum == FREE_USER_AREA_PAGE) then
-    alias userAreaPageNum R3;
-    userAreaPageNum = [PROCESS_TABLE + processId * 16 + 11];
-    // Free the user area page by invoking the Release Page function.
-    multipush(R0, R1, R2);
-    R1 = RELEASE_PAGE; 
-    R2 = userAreaPageNum;
-    call MOD_2; // Memory Manager 
-    multipop(R0, R1, R2);
+//////////////GET PCB ETRY//////////////////
+
+if(func_number==1) then
+    alias iter R3;
+    iter=0;
+
+    while(iter<16) do
+      if([PROCESS_TABLE + iter*16 + 4] == TERMINATED) then
+          [PROCESS_TABLE + iter*16 + 1]=iter;
+          [PROCESS_TABLE + iter*16 + 4]=ALLOCATED;
+          [PROCESS_TABLE + iter*16 + 14]=PAGE_TABLE_BASE + (iter*20);
+          [PROCESS_TABLE + iter*16 + 15]=10;
+          R0=iter;
+          return;
+       endif;
+       iter = iter + 1;
+    endwhile;      
+    
+    R0 = -1; //If no process_table_entry is free///
+    return;
+
 endif;
 
-if(functionNum == EXIT_PROCESS) then // 3 
-    // Invoke the Free Page Table function with same PID to deallocate the page table entries.
-    multipush(R0, R1, R2);
-    R1 = FREE_PAGE_TABLE;
-    R2 = processId;
-    call MOD_1;
-    multipop(R0, R1, R2);
 
 
-    // Invoke the Free user Area Page function with the same PID to free the user area page
-    multipush(R0, R1, R2);
-    R1 = FREE_USER_AREA_PAGE;
-    R2 = processId;
-    call MOD_1;
-    multipop(R0, R1, R2);
+/////free_user_area_page function///////////
+if( func_number==2 ) then
+    alias user_area_page_number R3;
+    user_area_page_number=[PROCESS_TABLE+PID*16+11];
 
-    // Set the state of the process as TERMINATED and return to the caller.
-    [PROCESS_TABLE + processId * 16 + 4] = TERMINATED;
-    
-
-
-    //  when Exit Process is invoked from Exec system call, it should not wake up the processes waiting for the current process and also should not set the children as orphan processes.
-    if([PROCESS_TABLE+processId*16+9] != 9) then
-        alias iter R5;
-        alias currentProcessAddress R4;
-
-        iter = 0;
-        while(iter < MAX_PROC_NUM) do
-            currentProcessAddress = PROCESS_TABLE + iter * 16;
-            
-            // Loop through the process table of all processes and change the state to READY for the processes whose state is tuple (WAIT_PROCESS, current PID)
-            if([currentProcessAddress + 4] == WAIT_PROCESS && [currentProcessAddress + 5] == processId) then
-                [currentProcessAddress + 4] = READY;
-                [currentProcessAddress + 5] = -1;
-            endif;
-
-            //  if the PPID of a process is PID of current process, then invalidate PPID field to -1.
-            if([currentProcessAddress + 2] == processId) then
-                [currentProcessAddress + 2] = -1;
-            endif;
-            iter = iter + 1;
-        endwhile;
-
-        
-
-    endif;
+    ///Calling Release_page function from memory_manager_module///
+    multipush(R1,R2,R3);
+    R1=2;
+    R2=user_area_page_number;
+    call MOD_2;
+    multipop(R1,R2,R3);
     return;
 endif;
 
-if(functionNum == FREE_PAGE_TABLE) then
-    // Invalidate the page table entries for the library pages by setting page number as -1 and auxiliary data as "0000" for each entry.
-    alias ptbr R3;
-    ptbr = [PROCESS_TABLE + processId * 16 + 14];
-    [ptbr + 0] = -1;
-    [ptbr + 1] = "0000";
-    [ptbr + 2] = -1;
-    [ptbr + 3] = "0000";
 
-    // For each valid entry in the page table, release the page by invoking the Release Page function and invalidate the entry.
-    alias ptlr R4;
-    alias count R5;
-    ptlr = [PROCESS_TABLE + processId * 16 + 15];
-    count = 4;
-    while(count < ptlr) do
-        alias page R6;
-        page = [ptbr + count * 2];
-        if(page != -1) then
-            multipush(R0, R1, R2, R3, R4, R5, R6);
-            R1 = RELEASE_PAGE;
-            R2 = page;
-            call MOD_2;
-            multipop(R0, R1, R2, R3, R4, R5, R6);
-            [ptbr + count * 2] = -1;
-            [ptbr + count * 2 + 1] = "0000";
-        endif;
-        count = count + 1;
-    endwhile;
-
-
-    // Go through the heap and stack entries in the disk map table of the process with given PID. If any valid entries are found, invoke the Release Blockfunction in the memory manager module.
-    alias diskMapTableEntry R3;
-    alias offset R5;
-    diskMapTableEntry = [DISK_MAP_TABLE + processId * 10 ];
-    offset = 2;
-    while(offset < 10) do
-        alias blockNum R4;
-        blockNum = [diskMapTableEntry + offset];
-        if(blockNum != -1) then
-            multipush(R0, R1, R2, R3, R4, R5);
-            R1 = RELEASE_BLOCK;
-            R3 = processId;
-            R2 = blockNum;
-            call MOD_2;
-            multipop(R0, R1, R2, R3, R4, R5);
-            // Invalidate all the entries of the disk map table.
-            [diskMapTableEntry + offset] = -1;
-        endif;
-        offset = offset + 1;
-    endwhile;
-    
-endif;
-
-    
-
-
-if(functionNum == GET_PCB_ENTRY) then // 1
-
-    // No arguments
-    alias processID R0; 
-    alias count R3;
-    alias state R4;
-    processID =-1;
-    count = 0;
-    while(count<16)do
-        state = [PROCESS_TABLE + count * 16 + 4];
-        if(state == TERMINATED) then
-            alias process_table_entry R5;
-            process_table_entry = PROCESS_TABLE + count * 16;
-            [process_table_entry + 1] = count;
-			[process_table_entry + 4] = ALLOCATED;
-			[process_table_entry + 14] = PAGE_TABLE_BASE + (count * 20);
-			[process_table_entry + 15] = 10;
-            processID = count;
-            break;
-        endif;
-        count = count+1;
-    endwhile;
+//////////Exit process function//////////
+if(func_number==3) then
    
+   ////Invoking the free_page_table from process_manager_module///
+   multipush(R1,R2);
+   R1=4;
+   call MOD_1;
+   multipop(R1,R2);
+
+   ////Invoking the free_user_area_page from process_manager_module///
+   multipush(R1,R2);
+   R1=2;
+   call MOD_1;
+   multipop(R1,R2);
+
+   alias iter R3;
+   iter = 0;
+
+   if([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] != 9) then
+
+       while(iter<16) do
+           if([PROCESS_TABLE + iter*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + iter*16 + 5] == PID) then
+               [PROCESS_TABLE + iter*16 + 4] = READY;
+
+                if([PROCESS_TABLE + iter*16 + 2] == [PROCESS_TABLE + PID*16 + 1]) then
+                    [PROCESS_TABLE + iter*16 + 2] = -1;
+                endif;
+           endif;
+           iter = iter + 1;
+   endwhile;            
+   endif;    
+   
+   [PROCESS_TABLE+PID*16+4]=TERMINATED;
+   return;
 endif;
 
-return;
+
+//////Free_Page_Table function/////////
+
+if(func_number==4) then
+
+   PTBR = [PROCESS_TABLE+PID*16+14];
+   [PTBR+0]=-1;
+   [PTBR+1]="0000";
+   [PTBR+2]=-1;
+   [PTBR+3]="0000";
+
+   alias iter R3;
+   iter = 4;
+
+    while(iter<20) do
+      if([PTBR+iter]!=-1) then
+        ///Calling Release_page function from memory_manager_module///
+        multipush(R1,R2,R3);
+        R1=2;
+        R2=[PTBR+iter];
+        call MOD_2;
+        multipop(R1,R2,R3);
+        [PTBR+iter]=-1;
+        [PTBR+iter+1]="0000";
+      endif;
+      iter=iter+2;
+    endwhile; 
+
+    alias disk_map_table R4;
+    disk_map_table = DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10;
+
+    iter = 2;
+
+    while(iter<4) do
+        if([disk_map_table + iter]!=-1) then
+            multipush(R1,R2,R3,R4);
+            R1=4;
+            R2=[disk_map_table+iter];
+            R3=PID;
+            call MOD_2;
+            multipop(R1,R2,R3,R4);
+        endif;
+        iter=iter+1;
+    endwhile;
+
+    iter=8;
+    while(iter<10) do
+        if([disk_map_table+iter]!=-1) then
+            multipush(R1,R2,R3,R4);
+            R1=4;
+            R2=[disk_map_table+iter];
+            R3=PID;
+            call MOD_2;
+            multipop(R1,R2,R3,R4);
+        endif;
+        iter=iter+1;
+    endwhile;
+
+    iter=0;
+    while(iter<10) do
+       [disk_map_table+iter]=-1;
+       iter=iter+1;
+    endwhile;
+
+   return;
+endif;   
+
